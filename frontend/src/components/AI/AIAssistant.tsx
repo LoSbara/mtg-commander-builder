@@ -126,35 +126,39 @@ export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard }: P
     <div className={styles.container}>
       {/* Header con selezione modello */}
       <div className={styles.header}>
-        <span className={styles.providerBadge} data-provider={status.provider}>
-          {status.provider === 'groq' ? '⚡ Groq' : '🤖 Ollama'}
-        </span>
-        <div className={styles.modelSelector}>
-          <label className={styles.modelLabel}>Modello</label>
-          <select
-            className={styles.modelSelect}
-            value={selectedModel}
-            onChange={(e) => setSelectedModel(e.target.value)}
-            disabled={generating}
-          >
-            {status.models.map((m) => (
-              <option key={m} value={m}>{m}</option>
-            ))}
-          </select>
+        <div className={styles.headerTop}>
+          <span className={styles.providerBadge} data-provider={status.provider}>
+            {status.provider === 'groq' ? '⚡ Groq' : '🤖 Ollama'}
+          </span>
         </div>
-        <button
-          className={styles.btnGenerate}
-          onClick={handleGenerate}
-          disabled={generating || !commanderCard}
-          title={!commanderCard ? 'Seleziona prima un commander' : ''}
-        >
-          {generating ? (
-            <span className={styles.generating}>
-              <span className={styles.spinner} />
-              Analisi in corso…
-            </span>
-          ) : '✨ Analizza commander'}
-        </button>
+        <div className={styles.headerBottom}>
+          <div className={styles.modelSelector}>
+            <label className={styles.modelLabel}>Modello</label>
+            <select
+              className={styles.modelSelect}
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value)}
+              disabled={generating}
+            >
+              {status.models.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </div>
+          <button
+            className={styles.btnGenerate}
+            onClick={handleGenerate}
+            disabled={generating || !commanderCard}
+            title={!commanderCard ? 'Seleziona prima un commander' : ''}
+          >
+            {generating ? (
+              <span className={styles.generating}>
+                <span className={styles.spinner} />
+                Analisi in corso…
+              </span>
+            ) : '✨ Analizza commander'}
+          </button>
+        </div>
       </div>
 
       {!commanderCard && (

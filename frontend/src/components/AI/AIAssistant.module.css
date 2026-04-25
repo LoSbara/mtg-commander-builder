@@ -77,8 +77,20 @@
 
 .header {
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.headerTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.headerBottom {
+  display: flex;
   align-items: flex-end;
-  gap: 10px;
+  gap: 8px;
 }
 
 .providerBadge {
