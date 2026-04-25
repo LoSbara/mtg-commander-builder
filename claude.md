@@ -24,6 +24,7 @@ Un'applicazione web full-stack per la creazione e gestione di mazzi **Commander*
 | Backend   | Node.js + Express + TypeScript          |
 | Cache DB  | SQLite (via `better-sqlite3`)           |
 | Cards API | Scryfall REST API                       |
+| AI        | Ollama (locale, default: `llama3.2`)    |
 | Monorepo  | npm workspaces                          |
 
 ---
@@ -59,6 +60,10 @@ MTG-deck-creater/
 │       │   ├── Card/
 │       │   ├── Deck/
 │       │   └── Search/
+│       ├── components/
+│       │   ├── AI/
+│       │   │   ├── AIAssistant.tsx       ← tab AI nel DeckBuilder
+│       │   │   └── AIAssistant.module.css
 │       └── pages/
 │           ├── Home.tsx
 │           ├── DeckBuilder.tsx
@@ -73,7 +78,8 @@ MTG-deck-creater/
         ├── routes/
         │   ├── cards.ts          ← GET /api/cards/search, /api/cards/:id
         │   ├── decks.ts          ← CRUD /api/decks
-        │   └── commanders.ts     ← GET /api/commanders/search
+        │   ├── commanders.ts     ← GET /api/commanders/search
+        │   └── ai.ts             ← GET /api/ai/status, POST /api/ai/decks/:id/suggest
         ├── controllers/
         │   ├── cardController.ts
         │   ├── deckController.ts
@@ -81,7 +87,8 @@ MTG-deck-creater/
         ├── services/
         │   ├── scryfallService.ts  ← wrapper Scryfall API
         │   ├── cacheService.ts     ← lettura/scrittura SQLite
-        │   └── deckService.ts     ← logica mazzo (validazione, stats)
+        │   ├── deckService.ts     ← logica mazzo (validazione, stats)
+        │   └── ollamaService.ts   ← client Ollama + prompt builder MTG
         ├── models/
         │   └── db.ts              ← init SQLite + schema
         └── data/
@@ -123,6 +130,12 @@ MTG-deck-creater/
 | GET    | `/api/decks/:id/validate`     | Validazione regole Commander      |
 | GET    | `/api/health`                 | Health check                      |
 
+### AI (Ollama)
+| Metodo | Endpoint                            | Descrizione                            |
+|--------|-------------------------------------|----------------------------------------|
+| GET    | `/api/ai/status`                    | `{ available, models[] }` da Ollama   |
+| POST   | `/api/ai/decks/:id/suggest`         | body `{ model? }` → suggerimenti AI   |
+
 ---
 
 ## Scryfall API — Note
@@ -158,6 +171,7 @@ MTG-deck-creater/
 | Deck builder UI                | ✅ Completato |
 | Deck stats/analytics UI        | ✅ Completato |
 | Export mazzo (TXT/MTGO/Moxfield)| ✅ Completato |
+| AI Assistant (Ollama)          | ✅ Completato |
 
 ---
 
@@ -171,6 +185,8 @@ MTG-deck-creater/
 - **Rate limiter interno**: throttle semplice basato su timestamp per rispettare i limiti Scryfall (2 req/s su search, 10 req/s sugli altri endpoint). Gestione HTTP 429 con errore esplicito.
 - **hydrateCards sequenziale**: le chiamate a `getCardById` vengono eseguite in sequenza (non con `Promise.all`) per evitare race condition sulla throttle condivisa e prevenire skip silenziosi di carte non ancora in cache.
 - **Export**: `GET /api/decks/:id/export?format=txt|mtgo|moxfield` — risponde con `text/plain` e header `Content-Disposition: attachment` per il download automatico. Il frontend usa `fetch` → `Blob` → link click per triggerare il download.
+- **Ollama (AI locale)**: LLM locale, nessuna API key, privacy garantita. Modello default `llama3.2` (~2GB). Il backend costruisce un prompt MTG-specifico con oracle text del commander, color identity e carte correnti, poi chiede all'AI di rispondere in JSON strutturato (`AISuggestions`). Timeout 120s (i modelli locali sono lenti). Se Ollama non è raggiungibile → errore `OLLAMA_NOT_RUNNING` → 503. Se il modello non esiste → `MODEL_NOT_FOUND` → 503.
+- **Risoluzione carte AI su Scryfall**: dopo che Ollama risponde con nomi di carte, il backend esegue `searchCards('!"CardName"')` su Scryfall per recuperare id, immagini e metadati. Le carte non trovate restituiscono `card: null` (il frontend le gestisce con optional chaining). La risoluzione è sequenziale (non parallela) per rispettare il rate limit.
 
 ---
 
@@ -192,4 +208,4 @@ npm run build --workspaces
 
 ---
 
-*Ultimo aggiornamento: 2026-04-25 — Export mazzo implementato (TXT/MTGO/Moxfield): endpoint backend `GET /api/decks/:id/export?format=`, funzioni `formatDeckExport` e `hydrateCards` (fix race condition → sequenziale), pulsante esporta con dropdown nel DeckBuilder. Test end-to-end: tutti gli endpoint verificati, TypeScript 0 errori su frontend e backend.*
+*Ultimo aggiornamento: 2026-04-25 — AI Assistant implementato con Ollama (llama3.2): `ollamaService.ts` (client REST + prompt builder MTG), route `/api/ai/status` e `/api/ai/decks/:id/suggest`, frontend `AIAssistant.tsx` con tab ✨ AI nel DeckBuilder (overview, mana base, curva, 15 suggerimenti con immagini Scryfall). Test end-to-end verificato, TypeScript 0 errori.*
