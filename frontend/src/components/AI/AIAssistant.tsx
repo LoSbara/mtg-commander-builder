@@ -37,11 +37,11 @@ export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard }: P
         setStatus(data);
         if (data.models.length > 0) {
           // Preferisce llama3 se disponibile
-          const preferred = data.models.find((m) => m.includes('llama3')) ?? data.models[0];
+          const preferred = data.models.find((m) => m.includes('llama3') || m.includes('llama-3')) ?? data.models[0];
           setSelectedModel(preferred);
         }
       })
-      .catch(() => setStatus({ available: false, models: [] }))
+      .catch(() => setStatus({ available: false, models: [], provider: 'ollama' }))
       .finally(() => setStatusLoading(false));
   }, []);
 
@@ -70,23 +70,36 @@ export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard }: P
     return <div className={styles.loading}>Verifica Ollama…</div>;
   }
 
-  // Ollama non disponibile
+  // AI non disponibile
   if (!status?.available) {
+    const isGroq = status?.provider === 'groq';
     return (
       <div className={styles.unavailable}>
-        <div className={styles.unavailableIcon}>🤖</div>
-        <h3>Ollama non rilevato</h3>
-        <p>Per usare l'assistente AI installa Ollama ed esegui:</p>
-        <div className={styles.codeBlock}>
-          <code>curl -fsSL https://ollama.com/install.sh | sh</code>
-          <code>ollama pull llama3.2</code>
-          <code>ollama serve</code>
-        </div>
+        <div className={styles.unavailableIcon}>{isGroq ? '⚡' : '🤖'}</div>
+        <h3>{isGroq ? 'Groq non configurato' : 'Ollama non rilevato'}</h3>
+        {isGroq ? (
+          <>
+            <p>Imposta <strong>GROQ_API_KEY</strong> nel file <code>backend/.env</code>:</p>
+            <div className={styles.codeBlock}>
+              <code>GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxx</code>
+            </div>
+            <p>Chiave gratuita su <strong>console.groq.com</strong></p>
+          </>
+        ) : (
+          <>
+            <p>Per usare l'assistente AI installa Ollama ed esegui:</p>
+            <div className={styles.codeBlock}>
+              <code>curl -fsSL https://ollama.com/install.sh | sh</code>
+              <code>ollama pull llama3.2</code>
+              <code>ollama serve</code>
+            </div>
+          </>
+        )}
         <button className={styles.btnRetry} onClick={() => {
           setStatusLoading(true);
           api.getAIStatus()
             .then(({ data }) => setStatus(data))
-            .catch(() => setStatus({ available: false, models: [] }))
+            .catch(() => setStatus({ available: false, models: [], provider: status?.provider ?? 'ollama' }))
             .finally(() => setStatusLoading(false));
         }}>
           Riprova
@@ -95,8 +108,8 @@ export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard }: P
     );
   }
 
-  // Nessun modello installato
-  if (status.models.length === 0) {
+  // Nessun modello installato (solo Ollama — Groq ha sempre i modelli)
+  if (status.models.length === 0 && status.provider === 'ollama') {
     return (
       <div className={styles.unavailable}>
         <div className={styles.unavailableIcon}>📦</div>
@@ -113,6 +126,9 @@ export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard }: P
     <div className={styles.container}>
       {/* Header con selezione modello */}
       <div className={styles.header}>
+        <span className={styles.providerBadge} data-provider={status.provider}>
+          {status.provider === 'groq' ? '⚡ Groq' : '🤖 Ollama'}
+        </span>
         <div className={styles.modelSelector}>
           <label className={styles.modelLabel}>Modello</label>
           <select
@@ -148,7 +164,11 @@ export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard }: P
       {generating && (
         <div className={styles.thinkingBox}>
           <p>🧠 Il modello sta analizzando <strong>{commanderCard?.name}</strong>…</p>
-          <p className={styles.thinkingHint}>Ci vogliono 30–120 secondi la prima volta.</p>
+          <p className={styles.thinkingHint}>
+            {status.provider === 'groq'
+              ? 'Risposta in ~10 secondi con Groq.'
+              : 'Ci vogliono 30–120 secondi la prima volta.'}
+          </p>
         </div>
       )}
 

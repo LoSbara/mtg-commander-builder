@@ -47,7 +47,7 @@ export async function getAvailableModels(): Promise<string[]> {
 
 // ─── Prompt builder ──────────────────────────────────────────────────────────
 
-function buildPrompt(commander: Card, currentCards: Card[], colorIdentity: string[]): string {
+export function buildPrompt(commander: Card, currentCards: Card[], colorIdentity: string[]): string {
   const existingNames = currentCards
     .filter((c) => c.name !== commander.name)
     .map((c) => c.name)

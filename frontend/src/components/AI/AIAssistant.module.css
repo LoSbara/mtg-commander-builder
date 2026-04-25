@@ -81,6 +81,30 @@
   gap: 10px;
 }
 
+.providerBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  align-self: center;
+  margin-bottom: 2px;
+}
+
+.providerBadge[data-provider='groq'] {
+  background: #f97316;
+  color: #fff;
+}
+
+.providerBadge[data-provider='ollama'] {
+  background: #6366f1;
+  color: #fff;
+}
+
 .modelSelector {
   flex: 1;
   display: flex;

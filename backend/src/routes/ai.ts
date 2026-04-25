@@ -3,19 +3,21 @@ import { getDb } from '../models/db';
 import { getCardById } from '../services/scryfallService';
 import { getDeckCardRows, hydrateCards } from '../services/deckService';
 import {
-  getDeckSuggestions,
-  isOllamaAvailable,
+  isAIAvailable,
   getAvailableModels,
-} from '../services/ollamaService';
+  getDeckSuggestions,
+  getActiveProvider,
+} from '../services/aiService';
 import { searchCards } from '../services/scryfallService';
 
 const router = Router();
 
-// GET /api/ai/status  — verifica disponibilità Ollama e modelli installati
+// GET /api/ai/status  — verifica disponibilità AI e provider attivo
 router.get('/status', async (_req, res) => {
-  const available = await isOllamaAvailable();
+  const provider = getActiveProvider();
+  const available = await isAIAvailable();
   const models = available ? await getAvailableModels() : [];
-  return res.json({ available, models });
+  return res.json({ available, models, provider });
 });
 
 // POST /api/ai/decks/:id/suggest  — genera suggerimenti AI per il mazzo
@@ -31,12 +33,15 @@ router.post('/decks/:id/suggest', async (req, res) => {
 
   const { model } = req.body as { model?: string };
 
-  // Verifica Ollama
-  const available = await isOllamaAvailable();
+  // Verifica disponibilità AI (Groq o Ollama)
+  const available = await isAIAvailable();
   if (!available) {
+    const provider = getActiveProvider();
     return res.status(503).json({
-      message: 'OLLAMA_NOT_RUNNING',
-      detail: 'Ollama non è in esecuzione. Avvia il servizio con: ollama serve',
+      message: provider === 'groq' ? 'GROQ_NOT_CONFIGURED' : 'OLLAMA_NOT_RUNNING',
+      detail: provider === 'groq'
+        ? 'GROQ_API_KEY non impostata. Aggiungila nel file .env'
+        : 'Ollama non è in esecuzione. Avvia il servizio con: ollama serve',
     });
   }
 
@@ -76,7 +81,9 @@ router.post('/decks/:id/suggest', async (req, res) => {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('Errore AI suggest:', msg);
 
-    if (msg.startsWith('OLLAMA_NOT_RUNNING') || msg.startsWith('MODEL_NOT_FOUND')) {
+    if (msg.startsWith('OLLAMA_NOT_RUNNING') || msg.startsWith('MODEL_NOT_FOUND') ||
+        msg.startsWith('GROQ_INVALID_KEY') || msg.startsWith('GROQ_RATE_LIMIT') ||
+        msg.startsWith('GROQ_NOT_CONFIGURED')) {
       return res.status(503).json({ message: msg });
     }
 

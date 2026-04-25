@@ -76,6 +76,7 @@ export interface AISuggestions {
 export interface OllamaStatus {
   available: boolean;
   models: string[];
+  provider: 'groq' | 'ollama';
 }
 
 export const getAIStatus = () =>
