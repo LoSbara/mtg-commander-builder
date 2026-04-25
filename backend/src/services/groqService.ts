@@ -8,8 +8,8 @@
 
 import Groq from 'groq-sdk';
 import type { Card } from 'shared';
-import type { AISuggestions } from './ollamaService';
-import { buildPrompt } from './ollamaService';
+import type { AISuggestions, TrimSuggestions } from './ollamaService';
+import { buildPrompt, buildTrimPrompt } from './ollamaService';
 
 // Modelli supportati da Groq (free tier)
 export const GROQ_MODELS = [
@@ -24,7 +24,52 @@ export function isGroqConfigured(): boolean {
   return !!process.env.GROQ_API_KEY;
 }
 
-export async function getDeckSuggestionsGroq(
+export async function getTrimSuggestionsGroq(
+  commander: Card,
+  nonCommanderCards: Card[],
+  cutCount: number,
+  model?: string
+): Promise<TrimSuggestions> {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) throw new Error('GROQ_NOT_CONFIGURED');
+
+  const targetModel = model ?? DEFAULT_GROQ_MODEL;
+  const prompt = buildTrimPrompt(commander, nonCommanderCards, cutCount);
+
+  const client = new Groq({ apiKey });
+  let content: string;
+  try {
+    const completion = await client.chat.completions.create({
+      model: targetModel,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.5,
+      max_tokens: 3000,
+    });
+    content = completion.choices[0]?.message?.content ?? '';
+  } catch (err: unknown) {
+    const anyErr = err as { status?: number };
+    if (anyErr.status === 401) throw new Error('GROQ_INVALID_KEY');
+    if (anyErr.status === 404) throw new Error(`MODEL_NOT_FOUND: ${targetModel}`);
+    if (anyErr.status === 429) throw new Error('GROQ_RATE_LIMIT');
+    throw err;
+  }
+
+  const jsonMatch = content.trim().match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('JSON non trovato nella risposta trim Groq.');
+
+  let parsed: TrimSuggestions;
+  try {
+    parsed = JSON.parse(jsonMatch[0]) as TrimSuggestions;
+  } catch {
+    throw new Error('JSON malformato nella risposta trim Groq.');
+  }
+
+  if (!Array.isArray(parsed.cuts)) parsed.cuts = [];
+  if (!parsed.analysis) parsed.analysis = '';
+  return parsed;
+}
+
+export async function getSuggestionsGroq(
   commander: Card,
   currentCards: Card[],
   model?: string

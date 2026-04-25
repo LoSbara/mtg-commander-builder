@@ -6,6 +6,7 @@ import {
   isAIAvailable,
   getAvailableModels,
   getDeckSuggestions,
+  getTrimSuggestions,
   getActiveProvider,
 } from '../services/aiService';
 import { searchCards } from '../services/scryfallService';
@@ -97,6 +98,63 @@ router.post('/decks/:id/suggest', async (req, res) => {
     }
 
     return res.status(500).json({ message: 'Errore durante la generazione dei suggerimenti AI.' });
+  }
+});
+
+// POST /api/ai/decks/:id/trim  — AI suggerisce quali carte tagliare (mazzo >100)
+router.post('/decks/:id/trim', async (req, res) => {
+  const db = getDb();
+  const deck = db
+    .prepare('SELECT id, name, commander_id FROM decks WHERE id = ?')
+    .get(req.params.id) as { id: string; name: string; commander_id: string } | undefined;
+
+  if (!deck) {
+    return res.status(404).json({ message: 'Mazzo non trovato.' });
+  }
+
+  const available = await isAIAvailable();
+  if (!available) {
+    const provider = getActiveProvider();
+    return res.status(503).json({
+      message: provider === 'groq' ? 'GROQ_NOT_CONFIGURED' : 'OLLAMA_NOT_RUNNING',
+    });
+  }
+
+  try {
+    const { model } = req.body as { model?: string };
+    const commander = await getCardById(deck.commander_id);
+    const rows = getDeckCardRows(deck.id);
+    const cardMap = await hydrateCards(rows);
+
+    const totalCards = rows.reduce((s, r) => s + r.quantity, 0);
+    if (totalCards <= 100) {
+      return res.status(400).json({
+        message: `Il mazzo ha ${totalCards} carte — non serve tagliare (limite 100).`,
+      });
+    }
+
+    const cutCount = totalCards - 100;
+    const nonCommanderCards = rows
+      .filter((r) => r.is_commander !== 1)
+      .flatMap((r) => {
+        const card = cardMap.get(r.card_id);
+        return card ? Array(r.quantity).fill(card) : [];
+      })
+      // Deduplication: se quantity>1 per terre base, includi una sola copia per non confondere il modello
+      .filter((card, idx, arr) => arr.findIndex((c) => c.id === card.id) === idx) as import('shared').Card[];
+
+    const result = await getTrimSuggestions(commander, nonCommanderCards, cutCount, model);
+
+    return res.json({ cutCount, ...result });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('Errore AI trim:', msg);
+    if (msg.startsWith('OLLAMA_NOT_RUNNING') || msg.startsWith('MODEL_NOT_FOUND') ||
+        msg.startsWith('GROQ_INVALID_KEY') || msg.startsWith('GROQ_RATE_LIMIT') ||
+        msg.startsWith('GROQ_NOT_CONFIGURED')) {
+      return res.status(503).json({ message: msg });
+    }
+    return res.status(500).json({ message: "Errore durante l'analisi del taglio." });
   }
 });
 

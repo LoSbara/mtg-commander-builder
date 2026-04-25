@@ -10,14 +10,16 @@ import {
   isOllamaAvailable,
   getAvailableModels as getOllamaModels,
   getDeckSuggestions as getDeckSuggestionsOllama,
+  getTrimSuggestions as getTrimSuggestionsOllama,
 } from './ollamaService';
 import {
   isGroqConfigured,
   GROQ_MODELS,
-  getDeckSuggestionsGroq,
+  getSuggestionsGroq,
+  getTrimSuggestionsGroq,
 } from './groqService';
 
-export type { AISuggestions, CardSuggestion, ManaSuggestion } from './ollamaService';
+export type { AISuggestions, CardSuggestion, ManaSuggestion, TrimSuggestions, CardCut } from './ollamaService';
 export type AIProvider = 'groq' | 'ollama';
 
 export function getActiveProvider(): AIProvider {
@@ -44,7 +46,19 @@ export async function getDeckSuggestions(
   model?: string
 ): Promise<Awaited<ReturnType<typeof getDeckSuggestionsOllama>>> {
   if (getActiveProvider() === 'groq') {
-    return getDeckSuggestionsGroq(commander, currentCards, model);
+    return getSuggestionsGroq(commander, currentCards, model);
   }
   return getDeckSuggestionsOllama(commander, currentCards, model);
+}
+
+export async function getTrimSuggestions(
+  commander: Card,
+  nonCommanderCards: Card[],
+  cutCount: number,
+  model?: string
+): Promise<Awaited<ReturnType<typeof getTrimSuggestionsOllama>>> {
+  if (getActiveProvider() === 'groq') {
+    return getTrimSuggestionsGroq(commander, nonCommanderCards, cutCount, model);
+  }
+  return getTrimSuggestionsOllama(commander, nonCommanderCards, cutCount, model);
 }

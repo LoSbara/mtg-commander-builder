@@ -79,8 +79,33 @@ export interface OllamaStatus {
   provider: 'groq' | 'ollama';
 }
 
+export interface CardCut {
+  name: string;
+  reason: string;
+}
+
+export interface TrimSuggestions {
+  cutCount: number;
+  analysis: string;
+  cuts: CardCut[];
+}
+
+export interface ImportResult {
+  imported: number;
+  importedCards: { name: string; id: string }[];
+  notFound: string[];
+  skipped: string[];
+  total: number;
+}
+
 export const getAIStatus = () =>
   http.get<OllamaStatus>('/ai/status');
 
 export const getAISuggestions = (deckId: string, model?: string) =>
   http.post<AISuggestions>(`/ai/decks/${deckId}/suggest`, { model });
+
+export const getAITrimSuggestions = (deckId: string, model?: string) =>
+  http.post<TrimSuggestions>(`/ai/decks/${deckId}/trim`, { model });
+
+export const importDeck = (deckId: string, text: string) =>
+  http.post<ImportResult>(`/decks/${deckId}/import`, { text });

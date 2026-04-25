@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Card } from 'shared';
 import * as api from '../../api';
-import type { AISuggestions, CardSuggestion, OllamaStatus } from '../../api';
+import type { AISuggestions, CardSuggestion, OllamaStatus, TrimSuggestions } from '../../api';
 import styles from './AIAssistant.module.css';
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -20,9 +20,12 @@ interface Props {
   commanderCard: Card | null;
   deckCardIds: Set<string>;
   onAddCard: (card: Card) => void;
+  totalCards?: number;
+  cardNameToId?: Map<string, string>;
+  onRemoveCard?: (cardId: string) => void;
 }
 
-export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard }: Props) {
+export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard, totalCards = 0, cardNameToId, onRemoveCard }: Props) {
   const [status, setStatus] = useState<OllamaStatus | null>(null);
   const [statusLoading, setStatusLoading] = useState(true);
   const [selectedModel, setSelectedModel] = useState('');
@@ -30,6 +33,11 @@ export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard }: P
   const [suggestions, setSuggestions] = useState<AISuggestions | null>(null);
   const [error, setError] = useState('');
   const [addedCards, setAddedCards] = useState<Set<string>>(new Set());
+  const [aiMode, setAiMode] = useState<'suggest' | 'trim'>('suggest');
+  const [trimming, setTrimming] = useState(false);
+  const [trimResult, setTrimResult] = useState<TrimSuggestions | null>(null);
+  const [trimError, setTrimError] = useState('');
+  const [removedCards, setRemovedCards] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     api.getAIStatus()
@@ -44,6 +52,29 @@ export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard }: P
       .catch(() => setStatus({ available: false, models: [], provider: 'ollama' }))
       .finally(() => setStatusLoading(false));
   }, []);
+
+  async function handleTrim() {
+    setTrimming(true);
+    setTrimError('');
+    setTrimResult(null);
+    try {
+      const { data } = await api.getAITrimSuggestions(deckId, selectedModel || undefined);
+      setTrimResult(data);
+    } catch (err) {
+      setTrimError(api.extractErrorMessage(err));
+    } finally {
+      setTrimming(false);
+    }
+  }
+
+  function handleRemove(cardName: string) {
+    if (!cardNameToId || !onRemoveCard) return;
+    const cardId = cardNameToId.get(cardName.toLowerCase());
+    if (cardId) {
+      onRemoveCard(cardId);
+      setRemovedCards((prev) => new Set(prev).add(cardName.toLowerCase()));
+    }
+  }
 
   async function handleGenerate() {
     if (!commanderCard) return;
@@ -130,6 +161,18 @@ export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard }: P
           <span className={styles.providerBadge} data-provider={status.provider}>
             {status.provider === 'groq' ? '⚡ Groq' : '🤖 Ollama'}
           </span>
+          {totalCards > 100 && (
+            <div className={styles.modeTabs}>
+              <button
+                className={`${styles.modeTab} ${aiMode === 'suggest' ? styles.modeTabActive : ''}`}
+                onClick={() => setAiMode('suggest')}
+              >✨ Suggerisci</button>
+              <button
+                className={`${styles.modeTab} ${styles.modeTabTrim} ${aiMode === 'trim' ? styles.modeTabActive : ''}`}
+                onClick={() => setAiMode('trim')}
+              >✂️ Taglia ({totalCards - 100} extra)</button>
+            </div>
+          )}
         </div>
         <div className={styles.headerBottom}>
           <div className={styles.modelSelector}>
@@ -138,30 +181,45 @@ export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard }: P
               className={styles.modelSelect}
               value={selectedModel}
               onChange={(e) => setSelectedModel(e.target.value)}
-              disabled={generating}
+              disabled={generating || trimming}
             >
               {status.models.map((m) => (
                 <option key={m} value={m}>{m}</option>
               ))}
             </select>
           </div>
-          <button
-            className={styles.btnGenerate}
-            onClick={handleGenerate}
-            disabled={generating || !commanderCard}
-            title={!commanderCard ? 'Seleziona prima un commander' : ''}
-          >
-            {generating ? (
-              <span className={styles.generating}>
-                <span className={styles.spinner} />
-                Analisi in corso…
-              </span>
-            ) : '✨ Analizza commander'}
-          </button>
+          {aiMode === 'suggest' ? (
+            <button
+              className={styles.btnGenerate}
+              onClick={handleGenerate}
+              disabled={generating || !commanderCard}
+              title={!commanderCard ? 'Seleziona prima un commander' : ''}
+            >
+              {generating ? (
+                <span className={styles.generating}>
+                  <span className={styles.spinner} />
+                  Analisi in corso…
+                </span>
+              ) : '✨ Analizza commander'}
+            </button>
+          ) : (
+            <button
+              className={styles.btnTrim}
+              onClick={handleTrim}
+              disabled={trimming}
+            >
+              {trimming ? (
+                <span className={styles.generating}>
+                  <span className={styles.spinner} />
+                  Analisi in corso…
+                </span>
+              ) : `✂️ Analizza e suggerisci tagli`}
+            </button>
+          )}
         </div>
       </div>
 
-      {!commanderCard && (
+      {!commanderCard && aiMode === 'suggest' && (
         <p className={styles.noCommander}>Seleziona un commander per usare l'AI.</p>
       )}
 
@@ -178,7 +236,56 @@ export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard }: P
 
       {error && <div className={styles.error}>{error}</div>}
 
-      {suggestions && (
+      {/* TRIM MODE */}
+      {aiMode === 'trim' && trimming && (
+        <div className={styles.thinkingBox}>
+          <p>🧠 Analisi di <strong>{totalCards}</strong> carte — suggerendo <strong>{totalCards - 100}</strong> tagli…</p>
+          <p className={styles.thinkingHint}>
+            {status.provider === 'groq' ? 'Risposta in ~15 secondi con Groq.' : 'Ci vogliono 60–180 secondi la prima volta.'}
+          </p>
+        </div>
+      )}
+
+      {aiMode === 'trim' && trimError && <div className={styles.error}>{trimError}</div>}
+
+      {aiMode === 'trim' && trimResult && (
+        <div className={styles.results}>
+          <div className={styles.overviewBox}>
+            <h4 className={styles.overviewTitle}>✂️ Analisi tagli — {trimResult.cutCount} carte da rimuovere</h4>
+            <p className={styles.overview}>{trimResult.analysis}</p>
+          </div>
+          <div className={styles.suggestionsSection}>
+            <h4 className={styles.sectionTitle}>🗑 Carte da rimuovere ({trimResult.cuts.length})</h4>
+            <div className={styles.suggestionList}>
+              {trimResult.cuts.map((cut, i) => {
+                const isRemoved = removedCards.has(cut.name.toLowerCase());
+                const hasRemoveHandler = !!cardNameToId?.has(cut.name.toLowerCase());
+                return (
+                  <div key={i} className={`${styles.suggestionCard} ${isRemoved ? styles.added : ''}`}>
+                    <div className={styles.suggestionContent}>
+                      <div className={styles.suggestionHeader}>
+                        <span className={styles.cardName}>{cut.name}</span>
+                      </div>
+                      <p className={styles.reason}>{cut.reason}</p>
+                    </div>
+                    <button
+                      className={`${styles.btnAdd} ${styles.btnRemove} ${isRemoved ? styles.btnAdded : ''}`}
+                      onClick={() => handleRemove(cut.name)}
+                      disabled={isRemoved || !hasRemoveHandler}
+                      title={isRemoved ? 'Rimossa' : !hasRemoveHandler ? 'Carta non trovata nel mazzo' : 'Rimuovi dal mazzo'}
+                    >
+                      {isRemoved ? '✓' : '🗑'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SUGGEST MODE */}
+      {aiMode === 'suggest' && suggestions && (
         <div className={styles.results}>
           {/* Overview strategico */}
           <div className={styles.overviewBox}>

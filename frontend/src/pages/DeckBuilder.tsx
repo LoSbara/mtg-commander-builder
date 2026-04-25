@@ -6,6 +6,7 @@ import { CommanderSearch } from '../components/Search/CommanderSearch';
 import { DeckCardList } from '../components/Deck/DeckCardList';
 import { DeckStatsPanel } from '../components/Deck/DeckStatsPanel';
 import { AIAssistant } from '../components/AI/AIAssistant';
+import { ImportModal } from '../components/Import/ImportModal';
 import type { Card, DeckStats } from 'shared';
 import * as api from '../api';
 import styles from './DeckBuilder.module.css';
@@ -39,6 +40,7 @@ export default function DeckBuilder() {
   // Export
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
 
   const isNew = !id;
@@ -144,6 +146,9 @@ export default function DeckBuilder() {
 
   const deckCardIds = new Set(currentDeck?.cards.map((r) => r.card_id) ?? []);
   const totalCards = currentDeck?.cards.reduce((s, r) => s + r.quantity, 0) ?? 0;
+  const cardNameToId = new Map(
+    Array.from(cardCache.entries()).map(([id, card]) => [card.name.toLowerCase(), id])
+  );
 
   // ─── UI per creazione nuovo mazzo ─────────────────────────────────────────
 
@@ -208,6 +213,14 @@ export default function DeckBuilder() {
         <h1 className={styles.builderTitle}>{currentDeck?.name ?? 'Caricamento…'}</h1>
         <div className={styles.headerRight}>
           <span className={styles.cardCount}>{totalCards} / 100</span>
+          <button
+            className={styles.btnImport}
+            onClick={() => setShowImportModal(true)}
+            disabled={!currentDeck}
+            title="Importa carte da file"
+          >
+            📥 Importa
+          </button>
           <div className={styles.exportWrapper} ref={exportMenuRef}>
             <button
               className={styles.btnExport}
@@ -257,11 +270,14 @@ export default function DeckBuilder() {
               <CardSearch onAddCard={handleAddCard} deckCardIds={deckCardIds} />
             )}
             {tab === 'ai' && currentDeck && (
-              <AIAssistant
+            <AIAssistant
                 deckId={currentDeck.id}
                 commanderCard={cardCache.get(currentDeck.commander_id) ?? null}
                 deckCardIds={deckCardIds}
                 onAddCard={handleAddCard}
+                totalCards={totalCards}
+                cardNameToId={cardNameToId}
+                onRemoveCard={handleRemoveCard}
               />
             )}
             {tab === 'commander' && currentDeck && (
@@ -311,6 +327,16 @@ export default function DeckBuilder() {
           <DeckStatsPanel stats={stats} loading={statsLoading} />
         </aside>
       </div>
+
+      {showImportModal && currentDeck && (
+        <ImportModal
+          deckId={currentDeck.id}
+          onClose={() => setShowImportModal(false)}
+          onImported={() => {
+            fetchDeck(currentDeck.id);
+          }}
+        />
+      )}
     </div>
   );
 }

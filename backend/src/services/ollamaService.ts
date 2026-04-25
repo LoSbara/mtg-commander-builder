@@ -25,6 +25,16 @@ export interface ManaSuggestion {
   recommendations: string[];
 }
 
+export interface CardCut {
+  name: string;    // nome esatto carta da tagliare
+  reason: string;  // perché tagliarla
+}
+
+export interface TrimSuggestions {
+  analysis: string;     // analisi generale del mazzo sovrabbondante
+  cuts: CardCut[];      // carte da tagliare (in ordine di priorità)
+}
+
 // ─── Controllo disponibilità Ollama ─────────────────────────────────────────
 
 export async function isOllamaAvailable(): Promise<boolean> {
@@ -105,6 +115,99 @@ Respond ONLY with valid JSON in this exact format (no markdown, no explanation o
 }
 
 Provide exactly 15 card suggestions covering different categories. All text in Italian except card names (always in English).`;
+}
+
+// ─── Prompt builder — Trim ───────────────────────────────────────────────────
+
+export function buildTrimPrompt(commander: Card, nonCommanderCards: Card[], cutCount: number): string {
+  const colorStr = commander.color_identity.length === 0 ? 'C' : commander.color_identity.join('');
+  const cardList = nonCommanderCards
+    .map((c) => `- ${c.name} | ${c.mana_cost ?? ''} | ${c.type_line} | "${c.oracle_text?.slice(0, 100) ?? ''}"`)
+    .join('\n');
+
+  return `You are an expert Magic: The Gathering Commander (EDH) deckbuilder.
+
+Commander: ${commander.name}
+Color Identity: {${colorStr}}
+Oracle Text: ${commander.oracle_text ?? 'N/A'}
+
+This deck has ${nonCommanderCards.length + 1} cards total (commander + ${nonCommanderCards.length} others).
+It needs to be trimmed to exactly 100 cards (commander + 99 others).
+You must identify exactly ${cutCount} cards to REMOVE.
+
+Current non-commander cards:
+${cardList}
+
+*** YOUR TASK ***
+Analyze the deck and identify the ${cutCount} weakest cards to cut.
+Prioritize cutting:
+1. Cards with poor synergy with the commander's strategy
+2. Redundant effects (if 4 similar cards exist, cut the weaker ones)
+3. Overcosted cards for what they do
+4. Cards that slow down the deck's primary game plan
+5. Excess lands if there are too many (>40)
+
+Keep the best lands, ramp, card draw, removal, and synergy pieces.
+Respect the commander's unique mechanics and win conditions.
+
+Respond ONLY with valid JSON in this exact format (no markdown, no extra text):
+{
+  "analysis": "2-3 sentences analyzing the overall deck composition and why these cuts improve it",
+  "cuts": [
+    {
+      "name": "Exact Card Name",
+      "reason": "Brief reason in Italian (1-2 sentences) why this card is the weakest link"
+    }
+  ]
+}
+
+Provide exactly ${cutCount} cuts. Card names must be in English (exact). Reasons in Italian.`;
+}
+
+// ─── Trim con Ollama ─────────────────────────────────────────────────────────
+
+export async function getTrimSuggestions(
+  commander: Card,
+  nonCommanderCards: Card[],
+  cutCount: number,
+  model?: string
+): Promise<TrimSuggestions> {
+  const targetModel = model ?? DEFAULT_MODEL;
+  const prompt = buildTrimPrompt(commander, nonCommanderCards, cutCount);
+
+  try {
+    const response = await axios.post<{ message: { content: string } }>(
+      `${OLLAMA_BASE}/api/chat`,
+      {
+        model: targetModel,
+        messages: [{ role: 'user', content: prompt }],
+        stream: false,
+        options: { temperature: 0.5, num_predict: 3000 },
+      },
+      { timeout: 180_000 }
+    );
+
+    const raw = response.data.message.content.trim();
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('JSON non trovato nella risposta trim.');
+
+    let parsed: TrimSuggestions;
+    try {
+      parsed = JSON.parse(jsonMatch[0]) as TrimSuggestions;
+    } catch {
+      throw new Error('JSON malformato nella risposta trim.');
+    }
+
+    if (!Array.isArray(parsed.cuts)) parsed.cuts = [];
+    if (!parsed.analysis) parsed.analysis = '';
+    return parsed;
+  } catch (err) {
+    if (err instanceof AxiosError) {
+      if (err.code === 'ECONNREFUSED') throw new Error('OLLAMA_NOT_RUNNING');
+      if (err.response?.status === 404) throw new Error(`MODEL_NOT_FOUND: ${targetModel}`);
+    }
+    throw err;
+  }
 }
 
 // ─── Chiamata a Ollama ──────────────────────────────────────────────────────

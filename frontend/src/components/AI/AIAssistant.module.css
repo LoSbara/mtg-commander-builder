@@ -425,3 +425,59 @@
   opacity: 0.3;
   cursor: default;
 }
+
+/* Trim mode */
+.modeTabs {
+  display: flex;
+  gap: 0.35rem;
+  margin-left: auto;
+}
+
+.modeTab {
+  background: transparent;
+  border: 1px solid #444;
+  color: #aaa;
+  border-radius: 6px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.modeTab:hover { background: #2a2a3e; color: #ddd; }
+
+.modeTabActive {
+  background: #2a2a3e;
+  border-color: #7fa8d0;
+  color: #fff;
+}
+
+.modeTabTrim.modeTabActive {
+  border-color: #f08060;
+  color: #f08060;
+}
+
+.btnTrim {
+  background: #8b2020;
+  border: none;
+  color: #fff;
+  border-radius: 6px;
+  padding: 0.45rem 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.btnTrim:hover:not(:disabled) { opacity: 0.85; }
+.btnTrim:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btnRemove {
+  background: #5a1a1a !important;
+  color: #f08060 !important;
+  font-size: 0.9rem !important;
+}
+.btnRemove:hover:not(:disabled) {
+  background: #7a2020 !important;
+}
+

@@ -140,6 +140,25 @@
   cursor: default;
 }
 
+.btnImport {
+  padding: 5px 14px;
+  background: rgba(100, 160, 220, 0.12);
+  border: 1px solid rgba(100, 160, 220, 0.3);
+  border-radius: 6px;
+  color: #7fa8d0;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.btnImport:hover:not(:disabled) {
+  background: rgba(100, 160, 220, 0.22);
+}
+.btnImport:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .exportMenu {
   position: absolute;
   right: 0;

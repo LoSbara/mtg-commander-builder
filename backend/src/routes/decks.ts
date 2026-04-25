@@ -12,6 +12,8 @@ import {
   formatDeckExport,
   type ExportFormat,
 } from '../services/deckService';
+import { parseDeckList } from '../services/importService';
+import { searchCards } from '../services/scryfallService';
 
 const router = Router();
 
@@ -165,6 +167,73 @@ router.get('/:id/validate', async (req, res) => {
     console.error('Errore validazione mazzo:', err);
     return res.status(500).json({ message: 'Errore durante la validazione.' });
   }
+});
+
+// POST /api/decks/:id/import  — importa carte da testo (MTGO/Arena/Moxfield/plain)
+router.post('/:id/import', async (req, res) => {
+  const db = getDb();
+  const deck = db
+    .prepare('SELECT id, commander_id FROM decks WHERE id = ?')
+    .get(req.params.id) as { id: string; commander_id: string } | undefined;
+
+  if (!deck) {
+    return res.status(404).json({ message: 'Mazzo non trovato.' });
+  }
+
+  const { text } = req.body as { text?: string };
+  if (!text || typeof text !== 'string') {
+    return res.status(400).json({ message: 'Campo "text" obbligatorio.' });
+  }
+
+  const parsed = parseDeckList(text);
+  if (parsed.length === 0) {
+    return res.status(400).json({ message: 'Nessuna carta riconosciuta nel testo.' });
+  }
+
+  const existingRows = getDeckCardRows(deck.id);
+  const existingIds = new Set(existingRows.map((r) => r.card_id));
+
+  const imported: { name: string; id: string }[] = [];
+  const notFound: string[] = [];
+  const skipped: string[] = [];  // già presenti nel mazzo
+
+  // Risoluzione sequenziale (rispetta rate limit Scryfall)
+  for (const entry of parsed) {
+    try {
+      const result = await searchCards(`!"${entry.name}"`, 1);
+      const card = result.data[0];
+      if (!card) {
+        notFound.push(entry.name);
+        continue;
+      }
+
+      // Salta il commander (già nel mazzo come is_commander)
+      if (card.id === deck.commander_id) {
+        skipped.push(entry.name);
+        continue;
+      }
+
+      // Salta carte già presenti
+      if (existingIds.has(card.id)) {
+        skipped.push(entry.name);
+        continue;
+      }
+
+      addCardToDeck(deck.id, card.id, entry.quantity, false);
+      existingIds.add(card.id);
+      imported.push({ name: card.name, id: card.id });
+    } catch {
+      notFound.push(entry.name);
+    }
+  }
+
+  return res.json({
+    imported: imported.length,
+    importedCards: imported,
+    notFound,
+    skipped,
+    total: existingIds.size,
+  });
 });
 
 // GET /api/decks/:id/export?format=txt|mtgo|moxfield
