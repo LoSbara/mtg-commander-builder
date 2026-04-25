@@ -1,0 +1,3 @@
+# Questo file serve a tracciare la directory nel repository.
+# Il file mtg_cache.db viene creato automaticamente all'avvio del backend
+# ed è escluso dal version control (vedi .gitignore).

@@ -1,0 +1,35 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --color-bg: #0f1117;
+  --color-surface: #161b27;
+  --color-surface-2: #1c2333;
+  --color-primary: #e94560;
+  --color-text: #e8eaf0;
+  --color-muted: #6b7280;
+  --color-border: rgba(255,255,255,0.07);
+  --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar sottile */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
+
+a { color: inherit; }
+
+button { font-family: inherit; }
+

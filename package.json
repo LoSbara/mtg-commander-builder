@@ -1,0 +1,19 @@
+{
+  "name": "mtg-deck-creator",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MTG Commander deck builder — monorepo",
+  "workspaces": [
+    "shared",
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
+    "build": "npm run build --workspace=shared && npm run build --workspace=backend && npm run build --workspace=frontend",
+    "lint": "npm run lint --workspaces --if-present"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}

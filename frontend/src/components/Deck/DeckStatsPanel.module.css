@@ -1,0 +1,137 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.loading, .empty {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 32px 0;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionTitle {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-muted);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding-bottom: 4px;
+}
+
+/* Curva di mana */
+.curve {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 80px;
+}
+
+.curveBar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex: 1;
+}
+
+.curveCount {
+  font-size: 0.65rem;
+  color: var(--color-muted);
+  min-height: 14px;
+}
+
+.curveFill {
+  width: 100%;
+  background: var(--color-primary);
+  border-radius: 3px 3px 0 0;
+  min-height: 2px;
+  transition: height 0.3s;
+}
+
+.cmc {
+  font-size: 0.65rem;
+  color: var(--color-muted);
+}
+
+.avg {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  text-align: right;
+}
+
+.avg strong { color: var(--color-text); }
+
+/* Distribuzione colori */
+.colorBars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.colorRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.colorLabel {
+  font-size: 0.75rem;
+  width: 90px;
+  flex-shrink: 0;
+}
+
+.colorBarTrack {
+  flex: 1;
+  height: 6px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.colorBarFill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+.colorVal {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  min-width: 20px;
+  text-align: right;
+}
+
+/* Tipi */
+.typeList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.typeRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+}
+
+.typeName { color: var(--color-muted); }
+.typeVal  { color: var(--color-text); font-weight: 600; }
+
+/* Prezzo */
+.price {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}

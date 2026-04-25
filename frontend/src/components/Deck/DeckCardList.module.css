@@ -1,0 +1,128 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.total {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  text-align: right;
+}
+
+.bar {
+  height: 4px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+.group { display: flex; flex-direction: column; gap: 4px; }
+
+.groupTitle {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-muted);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding-bottom: 3px;
+}
+
+.groupCount { font-weight: 400; }
+
+.list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 5px;
+  font-size: 0.8rem;
+  transition: background 0.1s;
+}
+
+.item:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.commander {
+  border-left: 2px solid var(--color-primary);
+}
+
+.qty {
+  color: var(--color-muted);
+  min-width: 18px;
+  font-size: 0.75rem;
+}
+
+.cardName {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mana {
+  font-size: 0.7rem;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.cmdBadge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: 3px;
+  padding: 1px 4px;
+}
+
+.removeBtn {
+  background: none;
+  border: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 2px;
+  transition: color 0.15s;
+  opacity: 0;
+}
+
+.item:hover .removeBtn { opacity: 1; }
+.removeBtn:hover { color: #f87171; }
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 100%;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 32px;
+}

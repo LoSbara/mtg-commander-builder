@@ -1,0 +1,260 @@
+/* ─── Pagina nuovo mazzo ─────────────────────────────────────────────────── */
+
+.newDeckPage {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.back {
+  color: var(--color-muted);
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: color 0.15s;
+}
+.back:hover { color: var(--color-text); }
+
+.newTitle {
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.newForm {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 0.82rem;
+  color: var(--color-muted);
+  font-weight: 500;
+}
+
+.input, .textarea {
+  padding: 10px 14px;
+  background: var(--color-surface);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s;
+  resize: vertical;
+}
+.input:focus, .textarea:focus { border-color: var(--color-primary); }
+.input::placeholder, .textarea::placeholder { color: var(--color-muted); }
+
+.error {
+  color: #f87171;
+  font-size: 0.85rem;
+  padding: 8px 12px;
+  background: rgba(239,68,68,0.1);
+  border-radius: 6px;
+}
+
+.btnCreate {
+  padding: 12px 28px;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.15s;
+  align-self: flex-start;
+}
+.btnCreate:hover:not(:disabled) { background: #c73650; }
+.btnCreate:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─── Builder layout ─────────────────────────────────────────────────────── */
+
+.builder {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.builderHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  background: var(--color-surface);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  flex-shrink: 0;
+}
+
+.builderTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  flex: 1;
+}
+
+.cardCount {
+  font-size: 0.85rem;
+  color: var(--color-muted);
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.exportWrapper {
+  position: relative;
+}
+
+.btnExport {
+  padding: 5px 14px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 6px;
+  color: var(--color-text);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.btnExport:hover:not(:disabled) {
+  background: rgba(255,255,255,0.14);
+}
+.btnExport:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.exportMenu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  background: var(--color-surface);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  overflow: hidden;
+  z-index: 100;
+  min-width: 150px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.exportMenu button {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  color: var(--color-text);
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.exportMenu button:hover {
+  background: rgba(255,255,255,0.07);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 320px 1fr 240px;
+  gap: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Pannello sinistro */
+.searchPanel {
+  border-right: 1px solid rgba(255,255,255,0.07);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  flex-shrink: 0;
+}
+
+.tab {
+  flex: 1;
+  padding: 10px;
+  background: none;
+  border: none;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+  border-bottom: 2px solid transparent;
+}
+.tab:hover { color: var(--color-text); background: rgba(255,255,255,0.03); }
+.activeTab {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.tabContent {
+  flex: 1;
+  overflow: hidden;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Commander info */
+.commanderInfo { display: flex; flex-direction: column; gap: 8px; }
+.commanderLabel { font-size: 0.75rem; color: var(--color-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.commanderCard { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.commanderImg { width: 100%; max-width: 200px; border-radius: 8px; }
+.commanderName { font-weight: 600; text-align: center; }
+.commanderType { font-size: 0.8rem; color: var(--color-muted); text-align: center; }
+.loading { color: var(--color-muted); font-size: 0.85rem; }
+
+/* Pannello centrale */
+.deckPanel {
+  border-right: 1px solid rgba(255,255,255,0.07);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 16px;
+  gap: 12px;
+}
+
+/* Pannello destro */
+.statsPanel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 16px;
+  gap: 12px;
+}
+
+.panelTitle {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-muted);
+  flex-shrink: 0;
+}
+
+@media (max-width: 1024px) {
+  .layout {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+  }
+  .statsPanel { grid-column: 1 / -1; border-top: 1px solid rgba(255,255,255,0.07); }
+}
