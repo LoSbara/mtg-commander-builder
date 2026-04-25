@@ -50,3 +50,36 @@ export const getDeckStats = (id: string) =>
 
 export const validateDeck = (id: string) =>
   http.get<ValidationResult>(`/decks/${id}/validate`);
+
+// ─── AI ─────────────────────────────────────────────────────────────────────
+
+export interface CardSuggestion {
+  name: string;
+  reason: string;
+  category: string;
+  card: Card | null;
+}
+
+export interface ManaSuggestion {
+  totalLands: number;
+  breakdown: string;
+  recommendations: string[];
+}
+
+export interface AISuggestions {
+  overview: string;
+  suggestions: CardSuggestion[];
+  manaBase: ManaSuggestion;
+  manaCurveAdvice: string;
+}
+
+export interface OllamaStatus {
+  available: boolean;
+  models: string[];
+}
+
+export const getAIStatus = () =>
+  http.get<OllamaStatus>('/ai/status');
+
+export const getAISuggestions = (deckId: string, model?: string) =>
+  http.post<AISuggestions>(`/ai/decks/${deckId}/suggest`, { model });

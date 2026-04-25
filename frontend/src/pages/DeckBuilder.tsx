@@ -5,11 +5,12 @@ import { CardSearch } from '../components/Search/CardSearch';
 import { CommanderSearch } from '../components/Search/CommanderSearch';
 import { DeckCardList } from '../components/Deck/DeckCardList';
 import { DeckStatsPanel } from '../components/Deck/DeckStatsPanel';
+import { AIAssistant } from '../components/AI/AIAssistant';
 import type { Card, DeckStats } from 'shared';
 import * as api from '../api';
 import styles from './DeckBuilder.module.css';
 
-type Tab = 'search' | 'commander';
+type Tab = 'search' | 'commander' | 'ai';
 type ExportFormat = 'txt' | 'mtgo' | 'moxfield';
 
 export default function DeckBuilder() {
@@ -243,11 +244,25 @@ export default function DeckBuilder() {
             >
               Commander
             </button>
+            <button
+              className={`${styles.tab} ${tab === 'ai' ? styles.activeTab : ''}`}
+              onClick={() => setTab('ai')}
+            >
+              ✨ AI
+            </button>
           </div>
 
           <div className={styles.tabContent}>
             {tab === 'search' && (
               <CardSearch onAddCard={handleAddCard} deckCardIds={deckCardIds} />
+            )}
+            {tab === 'ai' && currentDeck && (
+              <AIAssistant
+                deckId={currentDeck.id}
+                commanderCard={cardCache.get(currentDeck.commander_id) ?? null}
+                deckCardIds={deckCardIds}
+                onAddCard={handleAddCard}
+              />
             )}
             {tab === 'commander' && currentDeck && (
               <div className={styles.commanderInfo}>

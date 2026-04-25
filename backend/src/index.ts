@@ -5,6 +5,7 @@ import { initDb } from './models/db';
 import cardsRouter from './routes/cards';
 import commandersRouter from './routes/commanders';
 import decksRouter from './routes/decks';
+import aiRouter from './routes/ai';
 
 dotenv.config();
 
@@ -18,6 +19,7 @@ app.use(express.json());
 app.use('/api/cards', cardsRouter);
 app.use('/api/commanders', commandersRouter);
 app.use('/api/decks', decksRouter);
+app.use('/api/ai', aiRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {

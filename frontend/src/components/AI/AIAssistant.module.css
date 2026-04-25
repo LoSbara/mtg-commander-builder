@@ -1,0 +1,391 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.loading {
+  padding: 24px;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* ─── Stato non disponibile ──────────────────────────────────────────────── */
+
+.unavailable {
+  padding: 24px 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.unavailableIcon {
+  font-size: 2.5rem;
+  margin-bottom: 4px;
+}
+
+.unavailable h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.unavailable p {
+  font-size: 0.82rem;
+  color: var(--color-muted);
+}
+
+.codeBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 8px;
+  padding: 10px 14px;
+  text-align: left;
+  width: 100%;
+}
+
+.codeBlock code {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.78rem;
+  color: #a3e635;
+}
+
+.btnRetry {
+  margin-top: 8px;
+  padding: 8px 20px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 6px;
+  color: var(--color-text);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btnRetry:hover {
+  background: rgba(255,255,255,0.14);
+}
+
+/* ─── Header con selettore modello ──────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.modelSelector {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.modelLabel {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+.modelSelect {
+  background: var(--color-surface);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 6px;
+  color: var(--color-text);
+  font-size: 0.82rem;
+  padding: 6px 10px;
+  width: 100%;
+  cursor: pointer;
+  outline: none;
+}
+
+.btnGenerate {
+  padding: 7px 14px;
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.btnGenerate:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+.btnGenerate:disabled {
+  opacity: 0.45;
+  cursor: default;
+  transform: none;
+}
+
+.generating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Stato "pensando" ───────────────────────────────────────────────────── */
+
+.thinkingBox {
+  background: rgba(124,58,237,0.1);
+  border: 1px solid rgba(124,58,237,0.25);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.thinkingBox p {
+  font-size: 0.85rem;
+  margin: 0 0 4px;
+}
+
+.thinkingHint {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+.noCommander {
+  font-size: 0.82rem;
+  color: var(--color-muted);
+  text-align: center;
+  padding: 12px 0;
+}
+
+.error {
+  background: rgba(185,28,28,0.15);
+  border: 1px solid rgba(185,28,28,0.3);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  color: #f87171;
+}
+
+/* ─── Risultati ──────────────────────────────────────────────────────────── */
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.overviewBox {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.overviewTitle {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-muted);
+  margin: 0 0 8px;
+}
+
+.overview {
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.manaBox,
+.curveBox {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.sectionTitle {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 10px;
+}
+
+.manaBreakdown {
+  font-size: 0.82rem;
+  color: var(--color-text);
+  margin: 0 0 8px;
+}
+
+.manaList {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.manaList li {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
+
+.curveAdvice {
+  font-size: 0.82rem;
+  color: var(--color-text);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ─── Lista suggerimenti carte ───────────────────────────────────────────── */
+
+.suggestionsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.suggestionList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.suggestionCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px;
+  padding: 8px;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.suggestionCard:hover {
+  border-color: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.07);
+}
+
+.suggestionCard.added {
+  opacity: 0.5;
+}
+
+.suggestionLeft {
+  flex-shrink: 0;
+}
+
+.cardThumb {
+  width: 36px;
+  height: 50px;
+  border-radius: 4px;
+  object-fit: cover;
+  display: block;
+}
+
+.cardThumbPlaceholder {
+  width: 36px;
+  height: 50px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  color: var(--color-muted);
+  flex-shrink: 0;
+}
+
+.suggestionContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.suggestionHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.cardName {
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.category {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.reason {
+  font-size: 0.76rem;
+  color: var(--color-muted);
+  margin: 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.btnAdd {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.05);
+  color: var(--color-text);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+  line-height: 1;
+}
+
+.btnAdd:hover:not(:disabled) {
+  background: rgba(124,58,237,0.3);
+  border-color: rgba(124,58,237,0.6);
+}
+
+.btnAdd.btnAdded {
+  background: rgba(21,128,61,0.2);
+  border-color: rgba(21,128,61,0.4);
+  color: #4ade80;
+  cursor: default;
+}
+
+.btnAdd:disabled:not(.btnAdded) {
+  opacity: 0.3;
+  cursor: default;
+}

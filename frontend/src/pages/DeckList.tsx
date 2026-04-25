@@ -63,7 +63,7 @@ function DeckCard({
   onOpen: () => void;
   onDelete: (e: React.MouseEvent) => void;
 }) {
-  const cardCount = deck.cards.reduce((s, c) => s + c.quantity, 0);
+  const cardCount = (deck.cards ?? []).reduce((s, c) => s + c.quantity, 0);
   const date = new Date(deck.updated_at).toLocaleDateString('it-IT');
 
   return (

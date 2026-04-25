@@ -18,8 +18,12 @@ const router = Router();
 // GET /api/decks
 router.get('/', (_req, res) => {
   const db = getDb();
-  const decks = db.prepare('SELECT * FROM decks ORDER BY updated_at DESC').all();
-  return res.json(decks);
+  const decks = db.prepare('SELECT * FROM decks ORDER BY updated_at DESC').all() as Record<string, unknown>[];
+  const result = decks.map((deck) => ({
+    ...deck,
+    cards: getDeckCardRows(deck.id as string),
+  }));
+  return res.json(result);
 });
 
 // GET /api/decks/:id
