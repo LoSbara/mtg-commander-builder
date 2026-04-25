@@ -55,14 +55,31 @@ export function buildPrompt(commander: Card, currentCards: Card[], colorIdentity
 
   const colorStr = colorIdentity.length === 0 ? 'colorless' : colorIdentity.join('');
 
+  const colorNames: Record<string, string> = { W: 'White', U: 'Blue', B: 'Black', R: 'Red', G: 'Green' };
+  const colorFull = colorIdentity.length === 0
+    ? 'Colorless'
+    : colorIdentity.map((c) => colorNames[c] ?? c).join(', ');
+
   return `You are an expert Magic: The Gathering Commander (EDH) deckbuilder.
 
 Commander: ${commander.name}
-Color Identity: {${colorStr}}
+Color Identity: {${colorStr}} (${colorFull})
 Type: ${commander.type_line}
 Oracle Text: ${commander.oracle_text ?? 'N/A'}
 ${commander.power !== undefined ? `Power/Toughness: ${commander.power}/${commander.toughness}` : ''}
 ${currentCards.length > 1 ? `Already in deck: ${existingNames}` : 'Deck is empty (only commander so far)'}
+
+*** CRITICAL RULES — YOU MUST FOLLOW THESE EXACTLY ***
+1. ONLY suggest cards that are 100% legal in {${colorStr}} color identity.
+2. A card is legal ONLY if every mana symbol and color indicator on it is within {${colorStr}}.
+3. NEVER suggest cards containing colors outside {${colorStr}}. For example:
+${colorIdentity.length === 0
+  ? '   - Only suggest colorless cards (no W, U, B, R, or G mana symbols anywhere on the card).'
+  : `   - FORBIDDEN colors: ${['W','U','B','R','G'].filter(c => !colorIdentity.includes(c)).map(c => `{${c}} (${colorNames[c]})`).join(', ') || 'none'}.
+   - LEGAL colors: ${colorIdentity.map(c => `{${c}} (${colorNames[c]})`).join(', ')} plus colorless {C}/{X}.`}
+4. Colorless cards and artifacts with no colored mana symbols are always legal.
+5. Basic lands of the legal colors are always legal.
+*** END CRITICAL RULES ***
 
 Analyze the commander and provide a structured JSON response with deck building advice.
 Suggest cards that synergize with this specific commander's strategy.

@@ -55,23 +55,32 @@ router.post('/decks/:id/suggest', async (req, res) => {
     // Genera suggerimenti via LLM
     const suggestions = await getDeckSuggestions(commander, currentCards, model);
 
-    // Risolve i nomi delle carte su Scryfall per ottenere gli id reali
-    // (solo le prime 15 per non eccedere il rate limit)
-    const resolved = await Promise.allSettled(
-      suggestions.suggestions.slice(0, 15).map(async (s) => {
-        try {
-          const result = await searchCards(`!"${s.name}"`, 1);
-          const card = result.data[0] ?? null;
-          return { ...s, card };
-        } catch {
-          return { ...s, card: null };
-        }
-      })
-    );
+    // Risolve i nomi delle carte su Scryfall in modo sequenziale (rispetta rate limit)
+    // e filtra le carte illegali per color identity
+    const commanderColors = commander.color_identity;
+    const resolvedSuggestions: { name: string; reason: string; category: string; card: unknown }[] = [];
 
-    const resolvedSuggestions = resolved
-      .filter((r) => r.status === 'fulfilled')
-      .map((r) => (r as PromiseFulfilledResult<typeof resolved[number] extends PromiseFulfilledResult<infer T> ? T : never>).value);
+    for (const s of suggestions.suggestions.slice(0, 20)) {
+      if (resolvedSuggestions.length >= 15) break;
+      try {
+        const result = await searchCards(`!"${s.name}"`, 1);
+        const card = result.data[0] ?? null;
+
+        // Filtra carta illegale per color identity (safety net server-side)
+        if (card) {
+          const cardColors: string[] = [...((card as { color_identity?: string[] }).color_identity ?? [])];
+          const isLegal = cardColors.every((c) => (commanderColors as string[]).includes(c));
+          if (!isLegal) {
+            console.warn(`AI suggerito carta illegale filtrata: ${card.name} (${cardColors.join('')}) fuori da {${commanderColors.join('')}}`);
+            continue;
+          }
+        }
+
+        resolvedSuggestions.push({ ...s, card });
+      } catch {
+        resolvedSuggestions.push({ ...s, card: null });
+      }
+    }
 
     return res.json({
       ...suggestions,
