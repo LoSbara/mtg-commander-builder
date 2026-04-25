@@ -1,5 +1,6 @@
 import type { DeckStats } from 'shared';
 import styles from './DeckStatsPanel.module.css';
+import { ManaIcon } from '../ManaSymbol/ManaSymbol';
 
 interface Props {
   stats: DeckStats | null;
@@ -7,11 +8,11 @@ interface Props {
 }
 
 const COLOR_LABEL: Record<string, string> = {
-  W: '☀️ Bianco',
-  U: '💧 Blu',
-  B: '💀 Nero',
-  R: '🔥 Rosso',
-  G: '🌲 Verde',
+  W: 'Bianco',
+  U: 'Blu',
+  B: 'Nero',
+  R: 'Rosso',
+  G: 'Verde',
 };
 
 const CMC_MAX = 7;
@@ -51,7 +52,10 @@ export function DeckStatsPanel({ stats, loading }: Props) {
         <div className={styles.colorBars}>
           {(Object.entries(stats.colorDistribution) as [string, number][]).map(([color, val]) => (
             <div key={color} className={styles.colorRow}>
-              <span className={styles.colorLabel}>{COLOR_LABEL[color] ?? color}</span>
+              <span className={styles.colorLabel}>
+                <ManaIcon symbol={color} size="md" />
+                {' '}{COLOR_LABEL[color] ?? color}
+              </span>
               <div className={styles.colorBarTrack}>
                 <div
                   className={styles.colorBarFill}

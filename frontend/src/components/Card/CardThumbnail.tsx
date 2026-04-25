@@ -1,5 +1,6 @@
 import type { Card } from 'shared';
 import styles from './CardThumbnail.module.css';
+import { ManaCost, ColorIdentity } from '../ManaSymbol/ManaSymbol';
 
 interface Props {
   card: Card;
@@ -21,14 +22,6 @@ function getCardManaCost(card: Card): string {
   if (card.card_faces?.[0]?.mana_cost) return card.card_faces[0].mana_cost;
   return '';
 }
-
-const COLOR_MAP: Record<string, string> = {
-  W: '#f9fafb',
-  U: '#3b82f6',
-  B: '#1f2937',
-  R: '#ef4444',
-  G: '#22c55e',
-};
 
 export function CardThumbnail({ card, onClick, actionLabel, onAction, disabled }: Props) {
   const img = getCardImage(card);
@@ -54,19 +47,12 @@ export function CardThumbnail({ card, onClick, actionLabel, onAction, disabled }
       <div className={styles.info}>
         <div className={styles.nameRow}>
           <span className={styles.name}>{card.name}</span>
-          <span className={styles.mana}>{manaCost.replace(/[{}]/g, '')}</span>
+          {manaCost && <ManaCost cost={manaCost} size="sm" />}
         </div>
         <div className={styles.typeLine}>{card.type_line}</div>
         <div className={styles.footer}>
           <div className={styles.colors}>
-            {colorDots.map((c) => (
-              <span
-                key={c}
-                className={styles.colorDot}
-                style={{ background: COLOR_MAP[c] ?? '#888' }}
-                title={c}
-              />
-            ))}
+            <ColorIdentity colors={colorDots} size="sm" />
           </div>
           <span className={`${styles.rarity} ${styles[card.rarity]}`}>{card.rarity[0].toUpperCase()}</span>
         </div>

@@ -1,5 +1,6 @@
 import type { DeckCardRow, Card } from 'shared';
 import styles from './DeckCardList.module.css';
+import { ManaCost } from '../ManaSymbol/ManaSymbol';
 
 interface Props {
   cards: DeckCardRow[];
@@ -50,7 +51,7 @@ export function DeckCardList({ cards, cardCache, commanderId, onRemove, totalCou
                     <span className={styles.qty}>{row.quantity}×</span>
                     <span className={styles.cardName}>{card?.name ?? row.card_id}</span>
                     {card?.mana_cost && (
-                      <span className={styles.mana}>{card.mana_cost.replace(/[{}]/g, '')}</span>
+                      <ManaCost cost={card.mana_cost} size="sm" />
                     )}
                     {isCmd && <span className={styles.cmdBadge}>CMD</span>}
                     {!isCmd && (

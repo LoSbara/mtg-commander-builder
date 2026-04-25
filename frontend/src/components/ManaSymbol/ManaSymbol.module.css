@@ -1,0 +1,18 @@
+.sm {
+  font-size: 0.75rem;
+}
+
+.md {
+  font-size: 1rem;
+}
+
+.lg {
+  font-size: 1.4rem;
+}
+
+.manaCost {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  line-height: 1;
+}
