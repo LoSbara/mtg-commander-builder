@@ -53,10 +53,12 @@ interface ManaIconProps {
   symbol: string;
   size?: 'sm' | 'md' | 'lg';
   shadow?: boolean;
+  /** Aggiunge ms-cost per icone colorate (cerchio colorato stile mana cost) */
+  cost?: boolean;
 }
 
-export function ManaIcon({ symbol, size = 'md', shadow = false }: ManaIconProps) {
-  const cls = [symbolToClass(symbol), styles[size], shadow ? 'ms-shadow' : '']
+export function ManaIcon({ symbol, size = 'md', shadow = false, cost = false }: ManaIconProps) {
+  const cls = [symbolToClass(symbol), styles[size], cost ? 'ms-cost' : '', shadow ? 'ms-shadow' : '']
     .filter(Boolean)
     .join(' ');
   return <i className={cls} aria-label={`{${symbol}}`} />;

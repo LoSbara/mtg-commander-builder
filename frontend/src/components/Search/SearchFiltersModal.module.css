@@ -331,16 +331,21 @@
 
 .select {
   padding: 8px 12px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  background-color: #1a2035;
+  border: 1px solid rgba(255,255,255,0.14);
   border-radius: 8px;
-  color: var(--color-text);
+  color: #e2e8f0;
   font-size: 0.82rem;
   outline: none;
   cursor: pointer;
   transition: border-color 0.15s;
+  appearance: auto;
 }
 .select:focus { border-color: var(--color-primary); }
+.select option {
+  background-color: #1a2035;
+  color: #e2e8f0;
+}
 
 /* ─── Stat rows ────────────────────────────────────────────────────────────── */
 

@@ -276,13 +276,13 @@ export function SearchFiltersModal({ filters, onChange, onClose, onReset, active
                   className={`${styles.colorBtn} ${filters.colors.includes(c) ? styles.colorBtnActive : ''}`}
                   style={
                     filters.colors.includes(c)
-                      ? { boxShadow: `0 0 12px ${COLOR_GLOW[c]}`, borderColor: COLOR_GLOW[c] }
+                      ? { boxShadow: `0 0 14px ${COLOR_GLOW[c]}`, borderColor: COLOR_GLOW[c] }
                       : undefined
                   }
                   onClick={() => toggleColor(c)}
                   title={label}
                 >
-                  <ManaIcon symbol={c} size="md" />
+                  <ManaIcon symbol={c} size="lg" cost />
                   <span className={styles.colorLabel}>{label}</span>
                 </button>
               ))}
