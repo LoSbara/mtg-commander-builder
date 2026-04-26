@@ -11,6 +11,9 @@ export interface CardSuggestion {
   name: string;        // nome esatto della carta (in inglese)
   reason: string;      // perché è consigliata
   categories: string[];  // es. ["Rampa", "Utility"] — una carta può appartenere a più categorie
+  bracket: 1 | 2 | 3 | 4 | 5;  // bracket Commander: 1=precon, 2=casual, 3=upgraded, 4=optimized, 5=cEDH
+  isGameChanger: boolean;     // true se è un "game changer" del sistema bracket ufficiale
+  isMassLandDenial: boolean;  // true se è mass land denial/removal (Armageddon, ecc.)
 }
 
 export interface AISuggestions {
@@ -120,7 +123,10 @@ Respond ONLY with valid JSON in this exact format (no markdown, no explanation o
     {
       "name": "Exact Card Name",
       "reason": "Why this card works with the commander",
-      "categories": ["one or more of: Sinergia|Rampa|Rimozione|Draw|Evasione|Protezione|Utility|Combo"]
+      "categories": ["one or more of: Sinergia|Rampa|Rimozione|Draw|Evasione|Protezione|Utility|Combo"],
+      "bracket": 2,
+      "isGameChanger": false,
+      "isMassLandDenial": false
     }
   ],
   "manaBase": {
@@ -130,6 +136,28 @@ Respond ONLY with valid JSON in this exact format (no markdown, no explanation o
   },
   "manaCurveAdvice": "Specific advice about mana curve for this commander's strategy"
 }
+
+*** COMMANDER BRACKET SYSTEM (assign bracket to each suggested card) ***
+Bracket 1 — Precon level: basic removal, ramp (Cultivate, Kodama's Reach), low-power cards.
+Bracket 2 — Casual upgraded: solid staples (Sol Ring, Swords to Plowshares), no extra turns, no fast mana.
+Bracket 3 — Optimized: powerful tutors (Demonic Tutor, Vampiric Tutor), extra turns (Time Warp), strong combos, fast mana (Mana Crypt, Chrome Mox), efficient win-conditions.
+Bracket 4 — Highly optimized: near-cEDH, broken combos, most game changers, most resource denial.
+Bracket 5 — cEDH: full competitive, storm, multiple free spells, instant-win combos (Thassa's Oracle+Consultation), Ad Nauseam.
+
+GAME CHANGERS (set isGameChanger: true) — cards that single-handedly elevate a deck's power:
+- Extra turn spells (Time Walk, Timetwister, Time Warp, Nexus of Fate, Temporal Manipulation)
+- Fast mana (Mana Crypt, Mana Vault, Chrome Mox, Mox Diamond, Jeweled Lotus, Grim Monolith)
+- Broken tutors (Demonic Tutor, Vampiric Tutor, Imperial Seal, Mystical Tutor, Enlightened Tutor)
+- Instant wins (Thassa's Oracle, Thoracle+Consultation, Aetherflux Reservoir+storm, Labman effects)
+- Broken staples (Rhystic Study, Smothering Tithe, Necropotence, Sylvan Library, Esper Sentinel)
+- Combo enablers (Dockside Extortionist, Underworld Breach, Wheels, Ad Nauseam)
+
+MASS LAND DENIAL/REMOVAL (set isMassLandDenial: true):
+- Symmetric or one-sided land destruction affecting ALL lands: Armageddon, Ravages of War,
+  Jokulhaups, Obliterate, Decree of Annihilation, Apocalypse, Catastrophe
+- Stax denying land use for everyone: Winter Orb, Static Orb, Stasis, Mana Vortex, Land Equilibrium
+- Note: targeted single-land removal (Strip Mine, Wasteland) is NOT mass land denial.
+*** END BRACKET SYSTEM ***
 
 Provide exactly 15 card suggestions covering different categories. A card can have multiple categories (e.g. a ramp spell that also draws cards → ["Rampa","Draw"]). All text in Italian except card names (always in English).`;
 }
@@ -273,12 +301,15 @@ export async function getDeckSuggestions(
     if (!parsed.overview) parsed.overview = '';
     if (!parsed.manaBase) parsed.manaBase = { totalLands: 36, breakdown: '', recommendations: [] };
     if (!parsed.manaCurveAdvice) parsed.manaCurveAdvice = '';
-    // Normalizza categories: supporta sia array che stringa singola (per modelli vecchi)
+    // Normalizza categories, bracket, isGameChanger, isMassLandDenial
     parsed.suggestions = parsed.suggestions.map((s) => {
       const raw = s as CardSuggestion & { category?: string };
       if (!Array.isArray(s.categories)) {
         s.categories = raw.category ? [raw.category] : [];
       }
+      if (!s.bracket || s.bracket < 1 || s.bracket > 5) s.bracket = 2;
+      s.isGameChanger = !!s.isGameChanger;
+      s.isMassLandDenial = !!s.isMassLandDenial;
       return s;
     });
 

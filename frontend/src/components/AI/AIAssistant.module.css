@@ -372,7 +372,7 @@
   text-overflow: ellipsis;
 }
 
-.categories {
+.badges {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
@@ -385,6 +385,41 @@
   padding: 2px 7px;
   border-radius: 20px;
   color: white;
+  flex-shrink: 0;
+}
+
+.bracketBadge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: white;
+  flex-shrink: 0;
+  letter-spacing: 0.03em;
+}
+.bracket1 { background: #16a34a; }
+.bracket2 { background: #0891b2; }
+.bracket3 { background: #d97706; }
+.bracket4 { background: #ea580c; }
+.bracket5 { background: #dc2626; }
+
+.gameChangerBadge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  color: white;
+  background: #7c3aed;
+  flex-shrink: 0;
+}
+
+.landDenialBadge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  color: white;
+  background: #b91c1c;
   flex-shrink: 0;
 }
 

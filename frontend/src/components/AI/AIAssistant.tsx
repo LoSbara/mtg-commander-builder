@@ -339,8 +339,8 @@ export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard, tot
                     <div className={styles.suggestionContent}>
                       <div className={styles.suggestionHeader}>
                         <span className={styles.cardName}>{s.name}</span>
-                        <div className={styles.categories}>
-                          {(s.categories ?? [s as any]).map((cat: string) => (
+                        <div className={styles.badges}>
+                          {(s.categories ?? []).map((cat: string) => (
                             <span
                               key={cat}
                               className={styles.category}
@@ -349,6 +349,22 @@ export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard, tot
                               {cat}
                             </span>
                           ))}
+                          <span
+                            className={`${styles.bracketBadge} ${styles[`bracket${s.bracket ?? 2}`]}`}
+                            title={`Bracket ${s.bracket ?? 2}`}
+                          >
+                            B{s.bracket ?? 2}
+                          </span>
+                          {s.isGameChanger && (
+                            <span className={styles.gameChangerBadge} title="Game Changer — carta ad alto impatto">
+                              ⚡ Game Changer
+                            </span>
+                          )}
+                          {s.isMassLandDenial && (
+                            <span className={styles.landDenialBadge} title="Mass Land Denial — rimozione massiva di terre">
+                              🌍 Land Denial
+                            </span>
+                          )}
                         </div>
                       </div>
                       <p className={styles.reason}>{s.reason}</p>

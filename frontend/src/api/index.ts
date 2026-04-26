@@ -57,6 +57,9 @@ export interface CardSuggestion {
   name: string;
   reason: string;
   categories: string[];
+  bracket: 1 | 2 | 3 | 4 | 5;
+  isGameChanger: boolean;
+  isMassLandDenial: boolean;
   card: Card | null;
 }
 
