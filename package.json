@@ -11,7 +11,7 @@
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
     "build": "npm run build --workspace=frontend",
-    "start": "NODE_ENV=production node -e \"require('tsx/cjs'); require('./backend/src/index.ts')\"",
+    "start": "NODE_ENV=production npx tsx backend/src/index.ts",
     "lint": "npm run lint --workspaces --if-present"
   },
   "devDependencies": {

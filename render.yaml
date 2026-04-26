@@ -4,8 +4,8 @@ services:
     runtime: node
     region: frankfurt
     plan: free
-    buildCommand: npm install && npm run build
-    startCommand: npm start
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: NODE_ENV=production npx tsx backend/src/index.ts
     envVars:
       - key: NODE_ENV
         value: production
