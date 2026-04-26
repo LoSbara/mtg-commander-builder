@@ -1,10 +1,11 @@
-import type { DeckStats } from 'shared';
+import type { DeckStats, ValidationResult } from 'shared';
 import styles from './DeckStatsPanel.module.css';
 import { ManaIcon } from '../ManaSymbol/ManaSymbol';
 
 interface Props {
   stats: DeckStats | null;
   loading?: boolean;
+  validation?: ValidationResult | null;
 }
 
 const COLOR_LABEL: Record<string, string> = {
@@ -17,7 +18,7 @@ const COLOR_LABEL: Record<string, string> = {
 
 const CMC_MAX = 7;
 
-export function DeckStatsPanel({ stats, loading }: Props) {
+export function DeckStatsPanel({ stats, loading, validation }: Props) {
   if (loading) return <div className={styles.loading}>Caricamento statistiche…</div>;
   if (!stats) return <div className={styles.empty}>Aggiungi carte per vedere le statistiche.</div>;
 
@@ -26,6 +27,21 @@ export function DeckStatsPanel({ stats, loading }: Props) {
 
   return (
     <div className={styles.container}>
+      {/* Pannello validazione */}
+      {validation && (
+        <section className={`${styles.section} ${validation.valid ? styles.validOk : styles.validError}`}>
+          <h4 className={styles.sectionTitle}>
+            {validation.valid ? '✅ Mazzo valido' : `❌ Errori (${validation.errors.length})`}
+          </h4>
+          {!validation.valid && (
+            <ul className={styles.errorList}>
+              {validation.errors.map((e, i) => (
+                <li key={i} className={styles.errorItem}>{e}</li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
       <section className={styles.section}>
         <h4 className={styles.sectionTitle}>Curva di mana</h4>
         <div className={styles.curve}>

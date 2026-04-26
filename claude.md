@@ -183,7 +183,7 @@ MTG-deck-creater/
 | Import mazzo da file                 | ✅ Completato  |
 | AI Trim (mazzi >100 carte)           | ✅ Completato  |
 | Integrazione EDHREC + salt score     | ✅ Completato  |
-| Ban list Commander ufficiale         | ⬜ Da fare     |
+| Ban list Commander ufficiale         | ✅ Completato  |
 | Commander Brackets (1-5) + Game Changer + Mass Land Denial | ✅ Completato |
 
 ---
@@ -202,7 +202,7 @@ MTG-deck-creater/
 - **Import mazzo**: `parseDeckList(text)` in `importService.ts` gestisce MTGO (`1 Nome`), Arena (`1 Nome (SET) 123`), Moxfield, testo semplice. Risoluzione sequenziale su Scryfall per rispettare il rate limit. Salta commander e carte già presenti.
 - **EDHREC**: `getCommanderRecommendations(name)` in `edhrecService.ts` — fetch del JSON pubblico EDHREC, cache in memoria 24h, estrazione da sezioni prioritarie (highsynergy, top, ramp, ecc.). I dati vengono iniettati nel prompt AI come contesto aggiuntivo. Il salt score (0-4) viene incluso per aiutare l'AI a bilanciare potenza vs friendliness al tavolo. Fallback silenzioso se non disponibili.
 - **Commander Brackets AI**: ogni `CardSuggestion` ora include `bracket: 1|2|3|4|5` (potenza carta), `isGameChanger: boolean` (Mana Crypt, Thassa's Oracle, Demonic Tutor, Dockside, Necropotence, Rhystic Study, Smothering Tithe, ecc.) e `isMassLandDenial: boolean` (Armageddon, Ravages of War, Jokulhaups, Obliterate, Winter Orb, Stasis, ecc.). Il prompt AI include la definizione completa del sistema Bracket 1-5. Normalizzazione nei servizi: bracket default 2, booleani default false. Frontend mostra badge colorati B1-B5 (verde→rosso), badge "⚡ Game Changer" viola, badge "🌍 Land Denial" rosso scuro.
-- **Risoluzione carte AI su Scryfall**: dopo la risposta LLM, il backend risolve i nomi con `searchCards('!"CardName"')` sequenzialmente. Server-side safety net filtra carte illegali per color identity. Le carte non trovate restituiscono `card: null`.
+- **Ban list Commander**: la validazione usa `card.legalities['commander'] === 'banned'` dai dati Scryfall — sempre aggiornata automaticamente. Il risultato del `GET /api/decks/:id/validate` viene mostrato nel pannello statistiche: banner verde "✅ Mazzo valido" o banner rosso con la lista degli errori (carte bannate, duplicati, color identity, conteggio errato).
 
 ---
 

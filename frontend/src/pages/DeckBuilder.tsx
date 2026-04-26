@@ -7,7 +7,7 @@ import { DeckCardList } from '../components/Deck/DeckCardList';
 import { DeckStatsPanel } from '../components/Deck/DeckStatsPanel';
 import { AIAssistant } from '../components/AI/AIAssistant';
 import { ImportModal } from '../components/Import/ImportModal';
-import type { Card, DeckStats } from 'shared';
+import type { Card, DeckStats, ValidationResult } from 'shared';
 import * as api from '../api';
 import styles from './DeckBuilder.module.css';
 
@@ -30,6 +30,7 @@ export default function DeckBuilder() {
   // Stats
   const [stats, setStats] = useState<DeckStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
+  const [validation, setValidation] = useState<ValidationResult | null>(null);
 
   // Cache locale delle carte per visualizzarle nella lista
   const [cardCache, setCardCache] = useState<Map<string, Card>>(new Map());
@@ -101,14 +102,14 @@ export default function DeckBuilder() {
     );
   }, [currentDeck]);
 
-  // Ricarica le stats ogni volta che il mazzo cambia
+  // Ricarica stats e validazione ogni volta che il mazzo cambia
   useEffect(() => {
-    if (!currentDeck?.id) { setStats(null); return; }
+    if (!currentDeck?.id) { setStats(null); setValidation(null); return; }
     setStatsLoading(true);
-    api.getDeckStats(currentDeck.id)
-      .then(({ data }) => setStats(data))
-      .catch(() => setStats(null))
-      .finally(() => setStatsLoading(false));
+    Promise.all([
+      api.getDeckStats(currentDeck.id).then(({ data }) => setStats(data)).catch(() => setStats(null)),
+      api.validateDeck(currentDeck.id).then(({ data }) => setValidation(data)).catch(() => setValidation(null)),
+    ]).finally(() => setStatsLoading(false));
   }, [currentDeck]);
 
   // Crea il mazzo e il redirect
@@ -324,7 +325,7 @@ export default function DeckBuilder() {
         {/* Pannello destro — statistiche */}
         <aside className={styles.statsPanel}>
           <h2 className={styles.panelTitle}>Statistiche</h2>
-          <DeckStatsPanel stats={stats} loading={statsLoading} />
+          <DeckStatsPanel stats={stats} loading={statsLoading} validation={validation} />
         </aside>
       </div>
 
