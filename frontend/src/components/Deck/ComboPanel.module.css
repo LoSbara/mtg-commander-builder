@@ -5,6 +5,11 @@
   overflow: hidden;
 }
 
+@media (max-width: 768px) {
+  .container { height: auto; overflow: visible; }
+  .list { max-height: 360px; overflow-y: auto; flex: none; }
+}
+
 .tabs {
   display: flex;
   gap: 4px;

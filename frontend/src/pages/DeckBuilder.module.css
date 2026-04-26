@@ -339,7 +339,12 @@
     grid-template-columns: 1fr 1fr;
     grid-template-rows: auto auto;
   }
-  .statsPanel { grid-column: 1 / -1; border-top: 1px solid rgba(255,255,255,0.07); }
+  .statsPanel {
+    grid-column: 1 / -1;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    max-height: 480px;
+    overflow-y: auto;
+  }
 }
 
 @media (max-width: 768px) {
@@ -352,7 +357,8 @@
   }
   .builderTitle { font-size: 0.95rem; }
   .headerRight { gap: 6px; flex-wrap: wrap; }
-  .btnImport, .btnShare, .btnExport, .btnCopyLink {
+  .btnImport, .btnShare, .btnExport, .btnCopyLink,
+  .btnProxy, .btnSimulator {
     font-size: 0.75rem;
     padding: 4px 10px;
   }
@@ -380,5 +386,6 @@
   .statsPanel {
     grid-column: unset;
     border-top: none;
+    overflow-y: auto;
   }
 }
