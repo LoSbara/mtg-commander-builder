@@ -48,7 +48,7 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 10px;
   overflow-y: auto;
   padding-right: 4px;
@@ -73,6 +73,65 @@
   font-size: 0.85rem;
   text-align: center;
   padding: 24px 0;
+}
+
+/* ─── Modalità toggle ────────────────────────────────────────────────────── */
+
+.modeToggle {
+  display: flex;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.modeBtn {
+  flex: 1;
+  padding: 6px 10px;
+  background: none;
+  border: none;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  letter-spacing: 0.02em;
+}
+.modeBtn:hover { background: rgba(255,255,255,0.06); color: var(--color-text); }
+.modeBtnActive {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+/* ─── Scryfall syntax mode ───────────────────────────────────────────────── */
+
+.scryfallWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.scryfallInput {
+  font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace !important;
+  font-size: 0.82rem !important;
+  letter-spacing: 0.01em;
+}
+
+.scryfallHint {
+  font-size: 0.7rem;
+  color: var(--color-muted);
+  line-height: 1.5;
+  padding: 0 2px;
+  margin: 0;
+}
+.scryfallHint code {
+  background: rgba(255,255,255,0.08);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.68rem;
+  color: #a5b4fc;
 }
 
 /* ─── Filtri avanzati ──────────────────────────────────────────────────────── */
@@ -133,25 +192,55 @@
 .colorBtns {
   display: flex;
   gap: 5px;
+  flex-wrap: wrap;
 }
 .colorBtn {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.15);
-  background: rgba(255,255,255,0.05);
+  background: rgba(0,0,0,0.3);
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 1.1rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
 }
-.colorBtn:hover { border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.1); }
+.colorBtn:hover { border-color: rgba(255,255,255,0.5); transform: scale(1.12); }
 .colorBtnActive {
-  border-color: var(--color-btn, #fff);
-  background: rgba(255,255,255,0.15);
-  box-shadow: 0 0 6px var(--color-btn, #fff);
+  background: rgba(255,255,255,0.12);
+  transform: scale(1.08);
+}
+/* Colori specifici per il glow al click */
+.colorW.colorBtnActive { border-color: #f9e080; box-shadow: 0 0 8px rgba(249,224,128,0.6); }
+.colorU.colorBtnActive { border-color: #60a5fa; box-shadow: 0 0 8px rgba(96,165,250,0.6); }
+.colorB.colorBtnActive { border-color: #a78bfa; box-shadow: 0 0 8px rgba(167,139,250,0.6); }
+.colorR.colorBtnActive { border-color: #f87171; box-shadow: 0 0 8px rgba(248,113,113,0.6); }
+.colorG.colorBtnActive { border-color: #34d399; box-shadow: 0 0 8px rgba(52,211,153,0.6); }
+.colorC.colorBtnActive { border-color: #9ca3af; box-shadow: 0 0 8px rgba(156,163,175,0.6); }
+
+/* ── Color mode buttons ── */
+.colorModeBtns {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.colorModeBtn {
+  padding: 3px 9px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 5px;
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.colorModeBtn:hover { background: rgba(255,255,255,0.1); color: var(--color-text); }
+.colorModeBtnActive {
+  background: rgba(229,70,90,0.2);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .filterSelect {
@@ -183,6 +272,10 @@
   outline: none;
 }
 .filterInput:focus { border-color: var(--color-primary); }
+.filterInputFull {
+  flex: 1;
+  width: auto;
+}
 .cmcDash { color: var(--color-muted); }
 
 .resetBtn {
