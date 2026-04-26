@@ -195,8 +195,8 @@ export function DeckCardList({
         <div
           style={{
             position: 'fixed',
-            left: Math.min(tooltip.x, window.innerWidth - 220),
-            top: Math.max(8, Math.min(tooltip.y, window.innerHeight - 320)),
+            left: Math.min(tooltip.x, window.innerWidth - 295),
+            top: Math.max(8, Math.min(tooltip.y, window.innerHeight - 420)),
             zIndex: 9999,
             pointerEvents: 'none',
           }}
@@ -204,7 +204,7 @@ export function DeckCardList({
           <img
             src={tooltip.imgUrl}
             alt=""
-            style={{ width: 200, borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.85)' }}
+            style={{ width: 280, borderRadius: 14, boxShadow: '0 12px 48px rgba(0,0,0,0.9)' }}
           />
         </div>
       )}
