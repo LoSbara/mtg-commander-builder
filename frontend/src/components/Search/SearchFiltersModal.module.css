@@ -1,0 +1,414 @@
+/* ─── Overlay ──────────────────────────────────────────────────────────────── */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(3px);
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ─── Modal panel ──────────────────────────────────────────────────────────── */
+
+.modal {
+  background: #171c2a;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  width: 100%;
+  max-width: 700px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalIn 0.18s ease;
+  box-shadow: 0 28px 64px rgba(0,0,0,0.7);
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.94) translateY(12px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+/* ─── Header ───────────────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  flex-shrink: 0;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.headerTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.activeBadge {
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 10px;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btnReset {
+  padding: 5px 14px;
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.3);
+  border-radius: 6px;
+  color: #f87171;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btnReset:hover { background: rgba(239,68,68,0.22); }
+
+.btnClose {
+  width: 32px;
+  height: 32px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+.btnClose:hover { background: rgba(255,255,255,0.12); color: var(--color-text); }
+
+/* ─── Body ─────────────────────────────────────────────────────────────────── */
+
+.body {
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.body::-webkit-scrollbar { width: 6px; }
+.body::-webkit-scrollbar-track { background: transparent; }
+.body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+.body::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* ─── Section ──────────────────────────────────────────────────────────────── */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sectionTitle {
+  font-size: 0.67rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-muted);
+  font-weight: 600;
+  margin: 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+/* ─── Color section ────────────────────────────────────────────────────────── */
+
+.colorGrid {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.colorBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.04);
+  border: 2px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  flex: 1;
+  min-width: 72px;
+}
+.colorBtn:hover {
+  background: rgba(255,255,255,0.08);
+  transform: translateY(-2px);
+}
+.colorBtnActive {
+  background: rgba(255,255,255,0.1);
+}
+
+.colorLabel {
+  font-size: 0.67rem;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+.colorBtnActive .colorLabel { color: var(--color-text); }
+
+/* Color options row (logic/mode/match) */
+.colorOptions {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.optionGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.optionLabel {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-muted);
+}
+
+.radioGroup {
+  display: flex;
+  gap: 12px;
+}
+
+.radioLabel {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.radio {
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.matchBtns {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.matchBtn {
+  padding: 4px 10px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 5px;
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.matchBtn:hover { background: rgba(255,255,255,0.1); color: var(--color-text); }
+.matchBtnActive {
+  background: rgba(229,70,90,0.18);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* ─── Rarity section ───────────────────────────────────────────────────────── */
+
+.rarityBtns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rarityBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 9px 16px;
+  background: rgba(255,255,255,0.04);
+  border: 2px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  flex: 1;
+  min-width: 72px;
+}
+.rarityBtn:hover { background: rgba(255,255,255,0.08); transform: translateY(-1px); }
+.rarityBtnActive { background: rgba(255,255,255,0.08); }
+
+.rarityShort {
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--color-muted);
+}
+
+.rarityLabel {
+  font-size: 0.65rem;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+.rarityBtnActive .rarityLabel { color: var(--color-text); }
+
+/* ─── Layout helpers ───────────────────────────────────────────────────────── */
+
+.twoCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.threeCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+/* ─── Field ────────────────────────────────────────────────────────────────── */
+
+.fieldWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldLabel {
+  font-size: 0.7rem;
+  color: var(--color-muted);
+  font-weight: 500;
+}
+
+.input {
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: var(--color-text);
+  font-size: 0.82rem;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+.input:focus { border-color: var(--color-primary); }
+.input::placeholder { color: var(--color-muted); }
+
+.monoInput {
+  font-family: 'Fira Code', 'Consolas', monospace !important;
+  font-size: 0.78rem !important;
+}
+
+.select {
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: var(--color-text);
+  font-size: 0.82rem;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.select:focus { border-color: var(--color-primary); }
+
+/* ─── Stat rows ────────────────────────────────────────────────────────────── */
+
+.statRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.statLabel {
+  font-size: 0.78rem;
+  color: var(--color-text);
+  min-width: 150px;
+}
+
+.statControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.opBtns {
+  display: flex;
+  gap: 4px;
+}
+
+.opBtn {
+  width: 38px;
+  height: 30px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  font-family: 'Fira Code', monospace;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.opBtn:hover { background: rgba(255,255,255,0.1); color: var(--color-text); }
+.opBtnActive {
+  background: rgba(229,70,90,0.2);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.statInput {
+  width: 80px;
+  padding: 6px 10px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  color: var(--color-text);
+  font-size: 0.82rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.statInput:focus { border-color: var(--color-primary); }
+.statInput::placeholder { color: var(--color-muted); }
+
+/* ─── Responsive ───────────────────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+  .modal { max-height: 92vh; border-radius: 10px; }
+  .threeCol { grid-template-columns: 1fr 1fr; }
+  .twoCol { grid-template-columns: 1fr; }
+  .colorGrid { justify-content: center; }
+  .colorBtn, .rarityBtn { min-width: 60px; padding: 8px 10px; }
+  .colorOptions { gap: 10px; }
+  .statLabel { min-width: 110px; }
+}
