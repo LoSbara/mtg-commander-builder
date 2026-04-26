@@ -189,11 +189,11 @@ MTG-deck-creater/
 | Statistiche funzionali (rampa/draw/rimozione/boardwipe/ecc.) | ✅ Completato |
 | AI Analisi debolezze mazzo (`/analyze`) | ✅ Completato |
 | Simulatore mano iniziale (7 carte) | ✅ Completato |
-| Sostituzione carte via AI (`/replace`) | ⬜ Da fare |
-| Partner commanders (2 commander) | ⬜ Da fare |
-| Maybeboard | ⬜ Da fare |
-| Condivisione mazzo (link pubblico) | ⬜ Da fare |
-| Ricerca avanzata carte con filtri | ⬜ Da fare |
+| Sostituzione carte via AI (`/replace`) | ✅ Completato |
+| Partner commanders (2 commander) | ✅ Completato |
+| Maybeboard | ✅ Completato |
+| Condivisione mazzo (link pubblico) | ✅ Completato |
+| Ricerca avanzata carte con filtri | ✅ Completato |
 
 ---
 
