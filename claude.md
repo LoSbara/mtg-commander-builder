@@ -194,6 +194,13 @@ MTG-deck-creater/
 | Maybeboard | ✅ Completato |
 | Condivisione mazzo (link pubblico) | ✅ Completato |
 | Ricerca avanzata carte con filtri | ✅ Completato |
+| Commander art + color identity in DeckList | ✅ Completato |
+| Grid view nella lista mazzo | ✅ Completato |
+| DeckBuilder responsive (mobile) | ✅ Completato |
+| Prezzi mazzo (Scryfall USD/EUR) | ⬜ Da fare |
+| Commander Spellbook (combo detection) | ⬜ Da fare |
+| Ricerca nel mazzo (trova carta) | ⬜ Da fare |
+| Stampa proxy (HTML stampabile) | ⬜ Da fare |
 
 ---
 

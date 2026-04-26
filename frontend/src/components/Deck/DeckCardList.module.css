@@ -19,6 +19,126 @@
   text-align: right;
 }
 
+/* View toggle */
+.viewToggle {
+  display: flex;
+  gap: 4px;
+  align-self: flex-end;
+  margin-top: -2px;
+}
+
+.viewBtn {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.12);
+  color: var(--color-muted);
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.viewBtn:hover { background: rgba(255,255,255,0.06); color: var(--color-text); }
+.viewBtnActive {
+  background: rgba(255,255,255,0.1);
+  color: var(--color-text);
+  border-color: rgba(255,255,255,0.25);
+}
+
+/* ── Grid view ── */
+.gridView {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 6px;
+  overflow-y: auto;
+}
+
+.gridItem {
+  position: relative;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+  aspect-ratio: 5/7;
+}
+
+.gridImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 6px;
+  transition: transform 0.2s;
+}
+
+.gridPlaceholder {
+  width: 100%;
+  height: 100%;
+  background: rgba(255,255,255,0.06);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  color: var(--color-muted);
+  text-align: center;
+  padding: 4px;
+}
+
+.gridQty {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  background: rgba(0,0,0,0.75);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border-radius: 3px;
+  padding: 1px 4px;
+  pointer-events: none;
+}
+
+.gridOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  border-radius: 6px;
+}
+
+.gridItem:hover .gridOverlay { opacity: 1; }
+.gridItem:hover .gridImg { transform: scale(1.04); }
+
+.gridName {
+  font-size: 0.6rem;
+  color: #fff;
+  text-align: center;
+  padding: 0 4px;
+  line-height: 1.2;
+}
+
+.gridActions {
+  display: flex;
+  gap: 4px;
+}
+
+.gridBtn {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: #fff;
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.gridBtn:hover { background: rgba(255,255,255,0.3); }
+.gridBtnRemove:hover { background: rgba(239,68,68,0.6); }
+
 .bar {
   height: 4px;
   background: rgba(255,255,255,0.08);

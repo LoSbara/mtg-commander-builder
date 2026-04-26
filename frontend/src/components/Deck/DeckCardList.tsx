@@ -3,6 +3,8 @@ import type { DeckCardRow, Card } from 'shared';
 import styles from './DeckCardList.module.css';
 import { ManaCost } from '../ManaSymbol/ManaSymbol';
 
+type ViewMode = 'list' | 'grid';
+
 interface Props {
   cards: DeckCardRow[];
   cardCache: Map<string, Card>;
@@ -27,6 +29,7 @@ export function DeckCardList({
   onMoveToMain,
 }: Props) {
   const [tooltip, setTooltip] = useState<{ imgUrl: string; x: number; y: number } | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
 
   if (cards.length === 0) {
     return (
@@ -60,10 +63,61 @@ export function DeckCardList({
               style={{ width: `${Math.min((totalCount / 100) * 100, 100)}%` }}
             />
           </div>
+          <div className={styles.viewToggle}>
+            <button
+              className={`${styles.viewBtn} ${viewMode === 'list' ? styles.viewBtnActive : ''}`}
+              onClick={() => setViewMode('list')}
+              title="Vista lista"
+            >☰</button>
+            <button
+              className={`${styles.viewBtn} ${viewMode === 'grid' ? styles.viewBtnActive : ''}`}
+              onClick={() => setViewMode('grid')}
+              title="Vista griglia"
+            >⊞</button>
+          </div>
         </div>
 
-        {Object.entries(groups).map(([groupName, groupCards]) =>
-          groupCards.length > 0 ? (
+        {viewMode === 'grid' ? (
+          <div className={styles.gridView}>
+            {cards.filter((r) => r.card_id !== commanderId).map((row) => {
+              const card = cardCache.get(row.card_id);
+              const imgUrl = card?.image_uris?.normal ?? card?.card_faces?.[0]?.image_uris?.normal;
+              return (
+                <div
+                  key={row.card_id}
+                  className={styles.gridItem}
+                  onMouseEnter={(e) => handleMouseEnter(e, card)}
+                  onMouseLeave={() => setTooltip(null)}
+                >
+                  {imgUrl
+                    ? <img className={styles.gridImg} src={imgUrl} alt={card?.name} loading="lazy" />
+                    : <div className={styles.gridPlaceholder}>{card?.name ?? row.card_id}</div>
+                  }
+                  {row.quantity > 1 && <span className={styles.gridQty}>{row.quantity}×</span>}
+                  <div className={styles.gridOverlay}>
+                    <span className={styles.gridName}>{card?.name ?? row.card_id}</span>
+                    <div className={styles.gridActions}>
+                      {onRequestReplace && (
+                        <button
+                          className={styles.gridBtn}
+                          onClick={() => onRequestReplace(row.card_id)}
+                          title="Sostituisci con AI"
+                        >🔄</button>
+                      )}
+                      <button
+                        className={`${styles.gridBtn} ${styles.gridBtnRemove}`}
+                        onClick={() => onRemove(row.card_id)}
+                        title="Rimuovi"
+                      >×</button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <>{Object.entries(groups).map(([groupName, groupCards]) =>
+            groupCards.length > 0 ? (
             <section key={groupName} className={styles.group}>
               <h4 className={styles.groupTitle}>
                 {groupName} <span className={styles.groupCount}>({groupCards.length})</span>
@@ -112,6 +166,7 @@ export function DeckCardList({
               </ul>
             </section>
           ) : null
+          )}</>
         )}
       </div>
 

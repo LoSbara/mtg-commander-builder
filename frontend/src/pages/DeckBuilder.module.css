@@ -327,3 +327,44 @@
   }
   .statsPanel { grid-column: 1 / -1; border-top: 1px solid rgba(255,255,255,0.07); }
 }
+
+@media (max-width: 768px) {
+  .builder { height: auto; min-height: 100vh; overflow: auto; }
+
+  .builderHeader {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 14px;
+  }
+  .builderTitle { font-size: 0.95rem; }
+  .headerRight { gap: 6px; flex-wrap: wrap; }
+  .btnImport, .btnShare, .btnExport, .btnCopyLink {
+    font-size: 0.75rem;
+    padding: 4px 10px;
+  }
+  .cardCount { font-size: 0.78rem; }
+
+  .layout {
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .searchPanel {
+    border-right: none;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    max-height: 420px;
+  }
+
+  .tabContent { overflow-y: auto; }
+
+  .deckPanel {
+    border-right: none;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+
+  .statsPanel {
+    grid-column: unset;
+    border-top: none;
+  }
+}
