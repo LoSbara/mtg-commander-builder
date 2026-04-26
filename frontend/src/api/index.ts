@@ -56,7 +56,7 @@ export const validateDeck = (id: string) =>
 export interface CardSuggestion {
   name: string;
   reason: string;
-  category: string;
+  categories: string[];
   card: Card | null;
 }
 

@@ -322,7 +322,6 @@ export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard, tot
                 const alreadyInDeck = s.card ? deckCardIds.has(s.card.id) : false;
                 const alreadyAdded = s.card ? addedCards.has(s.card.id) : false;
                 const isAdded = alreadyInDeck || alreadyAdded;
-                const categoryColor = CATEGORY_COLORS[s.category] ?? '#6b7280';
 
                 return (
                   <div key={i} className={`${styles.suggestionCard} ${isAdded ? styles.added : ''}`}>
@@ -340,12 +339,17 @@ export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard, tot
                     <div className={styles.suggestionContent}>
                       <div className={styles.suggestionHeader}>
                         <span className={styles.cardName}>{s.name}</span>
-                        <span
-                          className={styles.category}
-                          style={{ background: categoryColor }}
-                        >
-                          {s.category}
-                        </span>
+                        <div className={styles.categories}>
+                          {(s.categories ?? [s as any]).map((cat: string) => (
+                            <span
+                              key={cat}
+                              className={styles.category}
+                              style={{ background: CATEGORY_COLORS[cat] ?? '#6b7280' }}
+                            >
+                              {cat}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                       <p className={styles.reason}>{s.reason}</p>
                     </div>

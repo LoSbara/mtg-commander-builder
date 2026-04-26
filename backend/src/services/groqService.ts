@@ -125,6 +125,14 @@ export async function getSuggestionsGroq(
   if (!parsed.overview) parsed.overview = '';
   if (!parsed.manaBase) parsed.manaBase = { totalLands: 36, breakdown: '', recommendations: [] };
   if (!parsed.manaCurveAdvice) parsed.manaCurveAdvice = '';
+  // Normalizza categories: supporta sia array che stringa singola (backward compat)
+  parsed.suggestions = parsed.suggestions.map((s) => {
+    const raw = s as AISuggestions['suggestions'][0] & { category?: string };
+    if (!Array.isArray(s.categories)) {
+      s.categories = raw.category ? [raw.category] : [];
+    }
+    return s;
+  });
 
   return parsed;
 }

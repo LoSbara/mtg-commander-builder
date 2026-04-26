@@ -9,7 +9,7 @@ const DEFAULT_MODEL = process.env.OLLAMA_MODEL ?? 'llama3.2';
 export interface CardSuggestion {
   name: string;        // nome esatto della carta (in inglese)
   reason: string;      // perché è consigliata
-  category: string;    // es. "Sinergia", "Rampa", "Rimozione", "Evasione", "Draw", "Mana base"
+  categories: string[];  // es. ["Rampa", "Utility"] — una carta può appartenere a più categorie
 }
 
 export interface AISuggestions {
@@ -103,7 +103,7 @@ Respond ONLY with valid JSON in this exact format (no markdown, no explanation o
     {
       "name": "Exact Card Name",
       "reason": "Why this card works with the commander",
-      "category": "one of: Sinergia|Rampa|Rimozione|Draw|Evasione|Protezione|Utility|Combo"
+      "categories": ["one or more of: Sinergia|Rampa|Rimozione|Draw|Evasione|Protezione|Utility|Combo"]
     }
   ],
   "manaBase": {
@@ -114,7 +114,7 @@ Respond ONLY with valid JSON in this exact format (no markdown, no explanation o
   "manaCurveAdvice": "Specific advice about mana curve for this commander's strategy"
 }
 
-Provide exactly 15 card suggestions covering different categories. All text in Italian except card names (always in English).`;
+Provide exactly 15 card suggestions covering different categories. A card can have multiple categories (e.g. a ramp spell that also draws cards → ["Rampa","Draw"]). All text in Italian except card names (always in English).`;
 }
 
 // ─── Prompt builder — Trim ───────────────────────────────────────────────────
@@ -255,6 +255,14 @@ export async function getDeckSuggestions(
     if (!parsed.overview) parsed.overview = '';
     if (!parsed.manaBase) parsed.manaBase = { totalLands: 36, breakdown: '', recommendations: [] };
     if (!parsed.manaCurveAdvice) parsed.manaCurveAdvice = '';
+    // Normalizza categories: supporta sia array che stringa singola (per modelli vecchi)
+    parsed.suggestions = parsed.suggestions.map((s) => {
+      const raw = s as CardSuggestion & { category?: string };
+      if (!Array.isArray(s.categories)) {
+        s.categories = raw.category ? [raw.category] : [];
+      }
+      return s;
+    });
 
     return parsed;
   } catch (err) {

@@ -59,7 +59,7 @@ router.post('/decks/:id/suggest', async (req, res) => {
     // Risolve i nomi delle carte su Scryfall in modo sequenziale (rispetta rate limit)
     // e filtra le carte illegali per color identity
     const commanderColors = commander.color_identity;
-    const resolvedSuggestions: { name: string; reason: string; category: string; card: unknown }[] = [];
+    const resolvedSuggestions: { name: string; reason: string; categories: string[]; card: unknown }[] = [];
 
     for (const s of suggestions.suggestions.slice(0, 20)) {
       if (resolvedSuggestions.length >= 15) break;
