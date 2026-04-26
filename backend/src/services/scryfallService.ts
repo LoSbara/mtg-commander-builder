@@ -1,12 +1,10 @@
 import axios, { AxiosError } from 'axios';
 import type { Card, ScryfallSearchResponse } from 'shared';
-import { getDb } from '../models/db';
 
 const SCRYFALL_BASE = 'https://api.scryfall.com';
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 ore (minimo raccomandato da Scryfall)
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 ore
 
 // ─── Axios instance con headers obbligatori ────────────────────────────────
-// Scryfall richiede User-Agent e Accept su ogni richiesta.
 
 const scryfall = axios.create({
   baseURL: SCRYFALL_BASE,
@@ -16,9 +14,7 @@ const scryfall = axios.create({
   },
 });
 
-// ─── Rate limiter ────────────────────────────────────────────────────────—─
-// /cards/search → max 2 req/s (500 ms di pausa)
-// tutti gli altri endpoint → max 10 req/s (100 ms di pausa)
+// ─── Rate limiter ──────────────────────────────────────────────────────────
 
 const lastRequestAt: Record<'slow' | 'fast', number> = { slow: 0, fast: 0 };
 
@@ -31,24 +27,24 @@ async function throttle(type: 'slow' | 'fast'): Promise<void> {
   lastRequestAt[type] = Date.now();
 }
 
-// ─── Cache helpers ─────────────────────────────────────────────────────────
+// ─── Cache in memoria (Map con TTL) ───────────────────────────────────────
+// Sostituisce SQLite/better-sqlite3 — funziona anche in produzione senza
+// dipendenze native. I dati durano per tutta la sessione del processo.
+
+const memCache = new Map<string, { card: Card; cachedAt: number }>();
 
 function getCachedCard(id: string): Card | null {
-  const db = getDb();
-  const row = db.prepare(
-    'SELECT data, cached_at FROM card_cache WHERE id = ?'
-  ).get(id) as { data: string; cached_at: number } | undefined;
-
-  if (!row) return null;
-  if (Date.now() - row.cached_at > CACHE_TTL_MS) return null;
-  return JSON.parse(row.data) as Card;
+  const entry = memCache.get(id);
+  if (!entry) return null;
+  if (Date.now() - entry.cachedAt > CACHE_TTL_MS) {
+    memCache.delete(id);
+    return null;
+  }
+  return entry.card;
 }
 
 function setCachedCard(card: Card): void {
-  const db = getDb();
-  db.prepare(
-    'INSERT OR REPLACE INTO card_cache (id, data, cached_at) VALUES (?, ?, ?)'
-  ).run(card.id, JSON.stringify(card), Date.now());
+  memCache.set(card.id, { card, cachedAt: Date.now() });
 }
 
 // ─── Gestione errori Scryfall ──────────────────────────────────────────────
