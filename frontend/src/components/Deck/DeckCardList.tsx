@@ -5,14 +5,27 @@ import { ManaCost } from '../ManaSymbol/ManaSymbol';
 
 interface Props {
   cards: DeckCardRow[];
-  /** Mappa card_id → oggetto Card (già caricati o in cache) */
   cardCache: Map<string, Card>;
   commanderId: string;
   onRemove: (cardId: string) => void;
   totalCount: number;
+  onRequestReplace?: (cardId: string) => void;
+  maybeboardCards?: DeckCardRow[];
+  onRemoveFromMaybeboard?: (cardId: string) => void;
+  onMoveToMain?: (cardId: string) => void;
 }
 
-export function DeckCardList({ cards, cardCache, commanderId, onRemove, totalCount }: Props) {
+export function DeckCardList({
+  cards,
+  cardCache,
+  commanderId,
+  onRemove,
+  totalCount,
+  onRequestReplace,
+  maybeboardCards = [],
+  onRemoveFromMaybeboard,
+  onMoveToMain,
+}: Props) {
   const [tooltip, setTooltip] = useState<{ imgUrl: string; x: number; y: number } | null>(null);
 
   if (cards.length === 0) {
@@ -73,13 +86,25 @@ export function DeckCardList({ cards, cardCache, commanderId, onRemove, totalCou
                       )}
                       {isCmd && <span className={styles.cmdBadge}>CMD</span>}
                       {!isCmd && (
-                        <button
-                          className={styles.removeBtn}
-                          onClick={() => onRemove(row.card_id)}
-                          aria-label={`Rimuovi ${card?.name ?? row.card_id}`}
-                        >
-                          ×
-                        </button>
+                        <>
+                          {onRequestReplace && (
+                            <button
+                              className={styles.replaceBtn}
+                              onClick={() => onRequestReplace(row.card_id)}
+                              aria-label={`Sostituisci ${card?.name ?? ''}`}
+                              title="Suggerisci sostituzione AI"
+                            >
+                              🔄
+                            </button>
+                          )}
+                          <button
+                            className={styles.removeBtn}
+                            onClick={() => onRemove(row.card_id)}
+                            aria-label={`Rimuovi ${card?.name ?? row.card_id}`}
+                          >
+                            ×
+                          </button>
+                        </>
                       )}
                     </li>
                   );
@@ -105,6 +130,50 @@ export function DeckCardList({ cards, cardCache, commanderId, onRemove, totalCou
             alt=""
             style={{ width: 200, borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.85)' }}
           />
+        </div>
+      )}
+
+      {/* ─── Maybeboard ─── */}
+      {maybeboardCards.length > 0 && (
+        <div className={styles.maybeSection}>
+          <h4 className={styles.maybeTitle}>
+            📋 Maybeboard <span className={styles.maybeCount}>({maybeboardCards.length})</span>
+          </h4>
+          <ul className={styles.list}>
+            {maybeboardCards.map((row) => {
+              const card = cardCache.get(row.card_id);
+              return (
+                <li
+                  key={row.card_id}
+                  className={`${styles.item} ${styles.maybeItem}`}
+                  onMouseEnter={(e) => handleMouseEnter(e, card)}
+                  onMouseLeave={() => setTooltip(null)}
+                >
+                  <span className={styles.qty}>{row.quantity}×</span>
+                  <span className={styles.cardName}>{card?.name ?? row.card_id}</span>
+                  {card?.mana_cost && <ManaCost cost={card.mana_cost} size="sm" />}
+                  {onMoveToMain && (
+                    <button
+                      className={styles.moveBtn}
+                      onClick={() => onMoveToMain(row.card_id)}
+                      title="Sposta nel mazzo principale"
+                    >
+                      →
+                    </button>
+                  )}
+                  {onRemoveFromMaybeboard && (
+                    <button
+                      className={styles.removeBtn}
+                      onClick={() => onRemoveFromMaybeboard(row.card_id)}
+                      aria-label={`Rimuovi ${card?.name ?? row.card_id} dal maybeboard`}
+                    >
+                      ×
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         </div>
       )}
     </>

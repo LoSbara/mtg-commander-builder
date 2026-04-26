@@ -27,9 +27,58 @@ function isBasicLand(card: Card): boolean {
 
 export function getDeckCardRows(deckId: string): DeckCardRow[] {
   const db = getDb();
+  // Esclude carte del maybeboard dalla lista principale
   return db
-    .prepare('SELECT * FROM deck_cards WHERE deck_id = ?')
+    .prepare('SELECT * FROM deck_cards WHERE deck_id = ? AND (is_maybeboard IS NULL OR is_maybeboard = 0)')
     .all(deckId) as DeckCardRow[];
+}
+
+export function getMaybeboardRows(deckId: string): DeckCardRow[] {
+  const db = getDb();
+  return db
+    .prepare('SELECT * FROM deck_cards WHERE deck_id = ? AND is_maybeboard = 1')
+    .all(deckId) as DeckCardRow[];
+}
+
+export function addToMaybeboard(deckId: string, cardId: string, quantity: number): void {
+  const db = getDb();
+  const existing = db
+    .prepare('SELECT quantity, is_maybeboard FROM deck_cards WHERE deck_id = ? AND card_id = ?')
+    .get(deckId, cardId) as { quantity: number; is_maybeboard: number } | undefined;
+
+  if (existing) {
+    // Sposta al maybeboard se era nel main deck
+    db.prepare(
+      'UPDATE deck_cards SET quantity = quantity + ?, is_maybeboard = 1 WHERE deck_id = ? AND card_id = ?'
+    ).run(quantity, deckId, cardId);
+  } else {
+    db.prepare(
+      'INSERT INTO deck_cards (deck_id, card_id, quantity, is_commander, is_maybeboard) VALUES (?, ?, ?, 0, 1)'
+    ).run(deckId, cardId, quantity);
+  }
+  db.prepare('UPDATE decks SET updated_at = ? WHERE id = ?').run(new Date().toISOString(), deckId);
+}
+
+export function removeFromMaybeboard(deckId: string, cardId: string): boolean {
+  const db = getDb();
+  const result = db
+    .prepare('DELETE FROM deck_cards WHERE deck_id = ? AND card_id = ? AND is_maybeboard = 1')
+    .run(deckId, cardId);
+  if (result.changes > 0) {
+    db.prepare('UPDATE decks SET updated_at = ? WHERE id = ?').run(new Date().toISOString(), deckId);
+  }
+  return result.changes > 0;
+}
+
+export function moveMaybeboardToMain(deckId: string, cardId: string): boolean {
+  const db = getDb();
+  const result = db
+    .prepare('UPDATE deck_cards SET is_maybeboard = 0 WHERE deck_id = ? AND card_id = ? AND is_maybeboard = 1')
+    .run(deckId, cardId);
+  if (result.changes > 0) {
+    db.prepare('UPDATE decks SET updated_at = ? WHERE id = ?').run(new Date().toISOString(), deckId);
+  }
+  return result.changes > 0;
 }
 
 // Carica gli oggetti Card completi dal cache SQLite per ogni voce del mazzo
@@ -67,7 +116,26 @@ export async function validateDeck(deckId: string): Promise<ValidationResult> {
   const cardMap = await hydrateCards(rows);
   const commander = await getCardById(deckRow.commander_id);
 
+  // Supporto partner commanders: color identity = unione di tutti i commander
   const commanderColorIdentity = new Set<ManaColor>(commander.color_identity);
+  const commanderRows = rows.filter((r) => r.is_commander === 1);
+
+  if (commanderRows.length === 2) {
+    const partnerRow = commanderRows.find((r) => r.card_id !== deckRow.commander_id);
+    if (partnerRow) {
+      const partner = cardMap.get(partnerRow.card_id);
+      if (partner) {
+        for (const c of partner.color_identity) commanderColorIdentity.add(c);
+        const cmd1HasPartner = commander.oracle_text?.toLowerCase().includes('partner') ?? false;
+        const cmd2HasPartner = partner.oracle_text?.toLowerCase().includes('partner') ?? false;
+        if (!cmd1HasPartner || !cmd2HasPartner) {
+          errors.push('Entrambi i commander debbono avere la keyword "Partner" o "Partner with".');
+        }
+      }
+    }
+  } else if (commanderRows.length > 2) {
+    errors.push(`Il mazzo ha ${commanderRows.length} commander — massimo 2 (partner).`);
+  }
 
   // 1. Conteggio totale (commander incluso)
   const totalCards = rows.reduce((sum, r) => sum + r.quantity, 0);

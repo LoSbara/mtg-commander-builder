@@ -48,7 +48,8 @@ export interface DeckCardRow {
   deck_id: string;
   card_id: string;
   quantity: number;
-  is_commander: number; // 0 | 1
+  is_commander: number;   // 0 | 1
+  is_maybeboard?: number; // 0 | 1
 }
 
 // ─── Mazzo (come restituito dal backend) ───────────────────────────────────
@@ -59,6 +60,8 @@ export interface Deck {
   description?: string | null;
   commander_id: string;
   cards: DeckCardRow[];
+  maybeboard?: DeckCardRow[];
+  share_token?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -124,6 +127,22 @@ export interface ScryfallSearchResponse {
   has_more: boolean;
   next_page?: string;
   data: Card[];
+}
+
+// ─── Sostituzione carta via AI ────────────────────────────────────────────
+
+export interface CardReplacementAlt {
+  name: string;
+  reason: string;
+  categories: string[];
+  bracket: 1 | 2 | 3 | 4 | 5;
+  isGameChanger: boolean;
+  isMassLandDenial: boolean;
+}
+
+export interface CardReplacementResult {
+  cardToReplace: string;
+  alternatives: CardReplacementAlt[];
 }
 
 export interface ApiError {

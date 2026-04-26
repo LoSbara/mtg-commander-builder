@@ -74,3 +74,148 @@
   text-align: center;
   padding: 24px 0;
 }
+
+/* ─── Filtri avanzati ──────────────────────────────────────────────────────── */
+
+.filterToggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.filterToggle:hover { background: rgba(255,255,255,0.1); color: var(--color-text); }
+.filterToggleActive { border-color: var(--color-primary); color: var(--color-primary); }
+
+.filterBadge {
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: 10px;
+  padding: 0 5px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.filterArrow { margin-left: auto; font-size: 0.6rem; }
+
+.filterPanel {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.filterRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filterLabel {
+  font-size: 0.72rem;
+  color: var(--color-muted);
+  min-width: 46px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.colorBtns {
+  display: flex;
+  gap: 5px;
+}
+.colorBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.05);
+  cursor: pointer;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+.colorBtn:hover { border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.1); }
+.colorBtnActive {
+  border-color: var(--color-btn, #fff);
+  background: rgba(255,255,255,0.15);
+  box-shadow: 0 0 6px var(--color-btn, #fff);
+}
+
+.filterSelect {
+  flex: 1;
+  padding: 5px 8px;
+  background: var(--color-surface);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  color: var(--color-text);
+  font-size: 0.8rem;
+  outline: none;
+}
+.filterSelect:focus { border-color: var(--color-primary); }
+
+.cmcRange {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+.filterInput {
+  width: 54px;
+  padding: 5px 8px;
+  background: var(--color-surface);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  color: var(--color-text);
+  font-size: 0.8rem;
+  outline: none;
+}
+.filterInput:focus { border-color: var(--color-primary); }
+.cmcDash { color: var(--color-muted); }
+
+.resetBtn {
+  padding: 4px 10px;
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.3);
+  border-radius: 5px;
+  color: #f87171;
+  font-size: 0.75rem;
+  cursor: pointer;
+  align-self: flex-start;
+}
+.resetBtn:hover { background: rgba(239,68,68,0.2); }
+
+/* Wrapper carta + pulsante maybeboard */
+.cardWrap {
+  position: relative;
+}
+
+.maybeBtn {
+  position: absolute;
+  bottom: 36px;
+  right: 6px;
+  background: rgba(0,0,0,0.7);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 4px;
+  color: #fff;
+  font-size: 0.75rem;
+  padding: 2px 5px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 2;
+}
+.cardWrap:hover .maybeBtn { opacity: 1; }
+.maybeBtn:hover { background: rgba(30,30,60,0.9); }

@@ -8,8 +8,8 @@
 
 import Groq from 'groq-sdk';
 import type { Card } from 'shared';
-import type { AISuggestions, TrimSuggestions, WeaknessAnalysis } from './ollamaService';
-import { buildPrompt, buildTrimPrompt, buildWeaknessPrompt } from './ollamaService';
+import type { AISuggestions, TrimSuggestions, WeaknessAnalysis, CardReplacementResult } from './ollamaService';
+import { buildPrompt, buildTrimPrompt, buildWeaknessPrompt, buildReplacementPrompt } from './ollamaService';
 import type { EDHRecCard } from './edhrecService';
 
 // Modelli supportati da Groq (free tier)
@@ -197,6 +197,61 @@ export async function getWeaknessAnalysisGroq(
     description: w.description || '',
     suggestions: Array.isArray(w.suggestions) ? w.suggestions : [],
   }));
+
+  return parsed;
+}
+
+export async function getCardReplacementGroq(
+  commander: Card,
+  currentCards: Card[],
+  cardToReplace: Card,
+  model?: string
+): Promise<CardReplacementResult> {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) throw new Error('GROQ_NOT_CONFIGURED');
+
+  const targetModel = model ?? DEFAULT_GROQ_MODEL;
+  const prompt = buildReplacementPrompt(commander, currentCards, cardToReplace);
+
+  const client = new Groq({ apiKey });
+  let content: string;
+  try {
+    const completion = await client.chat.completions.create({
+      model: targetModel,
+      messages: [
+        { role: 'system', content: 'You are an expert MTG Commander deckbuilder. Always respond with valid JSON only, no markdown.' },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.7,
+      max_tokens: 1500,
+    });
+    content = completion.choices[0]?.message?.content ?? '';
+  } catch (err: unknown) {
+    const anyErr = err as { status?: number };
+    if (anyErr.status === 401) throw new Error('GROQ_INVALID_KEY');
+    if (anyErr.status === 429) throw new Error('GROQ_RATE_LIMIT');
+    throw err;
+  }
+
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('Risposta Groq non contiene JSON valido.');
+
+  let parsed: CardReplacementResult;
+  try {
+    parsed = JSON.parse(jsonMatch[0]) as CardReplacementResult;
+  } catch {
+    throw new Error('JSON malformato nella risposta Groq (replace).');
+  }
+
+  if (!Array.isArray(parsed.alternatives)) parsed.alternatives = [];
+  parsed.alternatives = parsed.alternatives.map((s) => {
+    const raw = s as CardReplacementResult['alternatives'][0] & { category?: string };
+    if (!Array.isArray(s.categories)) s.categories = raw.category ? [raw.category] : [];
+    if (!s.bracket || s.bracket < 1 || s.bracket > 5) s.bracket = 2;
+    s.isGameChanger = !!s.isGameChanger;
+    s.isMassLandDenial = !!s.isMassLandDenial;
+    return s;
+  });
 
   return parsed;
 }

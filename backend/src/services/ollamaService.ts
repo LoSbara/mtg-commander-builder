@@ -438,3 +438,115 @@ export async function getDeckWeaknesses(
     throw err;
   }
 }
+
+// ─── AI Sostituzione carta ─────────────────────────────────────────────────
+
+export interface CardReplacementAlt {
+  name: string;
+  reason: string;
+  categories: string[];
+  bracket: 1 | 2 | 3 | 4 | 5;
+  isGameChanger: boolean;
+  isMassLandDenial: boolean;
+}
+
+export interface CardReplacementResult {
+  cardToReplace: string;
+  alternatives: CardReplacementAlt[];
+}
+
+export function buildReplacementPrompt(commander: Card, currentCards: Card[], cardToReplace: Card): string {
+  const colorStr = commander.color_identity.length === 0 ? 'C' : commander.color_identity.join('');
+  const deckList = currentCards
+    .filter((c) => c.id !== cardToReplace.id && c.name !== commander.name)
+    .slice(0, 50)
+    .map((c) => c.name)
+    .join(', ');
+
+  return `You are an expert Magic: The Gathering Commander (EDH) deckbuilder.
+
+Commander: ${commander.name}
+Color Identity: {${colorStr}}
+Commander text: ${commander.oracle_text ?? 'N/A'}
+
+CARD TO REPLACE: ${cardToReplace.name}
+Type: ${cardToReplace.type_line}
+Mana cost: ${cardToReplace.mana_cost ?? 'N/A'}
+Oracle text: ${cardToReplace.oracle_text ?? 'N/A'}
+
+Other cards in deck: ${deckList}
+
+Suggest 5 specific cards that could replace "${cardToReplace.name}" in this Commander deck.
+Consider: similar effect, better synergy with commander, same mana cost range.
+Color identity rule: ONLY cards legal in {${colorStr}} — no other colors allowed.
+Do NOT suggest cards already in the deck.
+
+Respond ONLY with valid JSON (no markdown):
+{
+  "cardToReplace": "${cardToReplace.name}",
+  "alternatives": [
+    {
+      "name": "Exact Card Name",
+      "reason": "Perché è un buon sostituto (1-2 frasi in italiano)",
+      "categories": ["one or more of: Sinergia|Rampa|Rimozione|Draw|Evasione|Protezione|Utility|Combo"],
+      "bracket": 2,
+      "isGameChanger": false,
+      "isMassLandDenial": false
+    }
+  ]
+}
+
+Provide exactly 5 alternatives. Card names in English. Reasons in Italian.`;
+}
+
+export async function getCardReplacement(
+  commander: Card,
+  currentCards: Card[],
+  cardToReplace: Card,
+  model?: string
+): Promise<CardReplacementResult> {
+  const targetModel = model ?? DEFAULT_MODEL;
+  const prompt = buildReplacementPrompt(commander, currentCards, cardToReplace);
+
+  try {
+    const response = await axios.post<{ message: { content: string } }>(
+      `${OLLAMA_BASE}/api/chat`,
+      {
+        model: targetModel,
+        messages: [{ role: 'user', content: prompt }],
+        stream: false,
+        options: { temperature: 0.7, num_predict: 1500 },
+      },
+      { timeout: 120_000 }
+    );
+
+    const raw = response.data.message.content.trim();
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('JSON non trovato nella risposta replacement.');
+
+    let parsed: CardReplacementResult;
+    try {
+      parsed = JSON.parse(jsonMatch[0]) as CardReplacementResult;
+    } catch {
+      throw new Error('JSON malformato nella risposta replacement.');
+    }
+
+    if (!Array.isArray(parsed.alternatives)) parsed.alternatives = [];
+    parsed.alternatives = parsed.alternatives.map((s) => {
+      const raw = s as CardReplacementAlt & { category?: string };
+      if (!Array.isArray(s.categories)) s.categories = raw.category ? [raw.category] : [];
+      if (!s.bracket || s.bracket < 1 || s.bracket > 5) s.bracket = 2;
+      s.isGameChanger = !!s.isGameChanger;
+      s.isMassLandDenial = !!s.isMassLandDenial;
+      return s;
+    });
+
+    return parsed;
+  } catch (err) {
+    if (err instanceof AxiosError) {
+      if (err.code === 'ECONNREFUSED') throw new Error('OLLAMA_NOT_RUNNING');
+      if (err.response?.status === 404) throw new Error(`MODEL_NOT_FOUND: ${targetModel}`);
+    }
+    throw err;
+  }
+}

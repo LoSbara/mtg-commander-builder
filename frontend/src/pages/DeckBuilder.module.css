@@ -159,6 +159,34 @@
   cursor: default;
 }
 
+.btnShare {
+  padding: 5px 14px;
+  background: rgba(180, 120, 220, 0.12);
+  border: 1px solid rgba(180, 120, 220, 0.3);
+  border-radius: 6px;
+  color: #c09ad0;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.btnShare:hover:not(:disabled) {
+  background: rgba(180, 120, 220, 0.22);
+}
+.btnShare:disabled { opacity: 0.5; cursor: default; }
+
+.btnCopyLink {
+  padding: 5px 10px;
+  background: rgba(180, 120, 220, 0.12);
+  border: 1px solid rgba(180, 120, 220, 0.3);
+  border-radius: 6px;
+  color: #c09ad0;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btnCopyLink:hover { background: rgba(180, 120, 220, 0.22); }
+
 .exportMenu {
   position: absolute;
   right: 0;

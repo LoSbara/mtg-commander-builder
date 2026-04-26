@@ -116,6 +116,26 @@ export interface ImportResult {
   total: number;
 }
 
+export interface CardReplacementAlt {
+  name: string;
+  reason: string;
+  categories: string[];
+  bracket: 1 | 2 | 3 | 4 | 5;
+  isGameChanger: boolean;
+  isMassLandDenial: boolean;
+  card: Card | null;
+}
+
+export interface CardReplacementResult {
+  cardToReplace: string;
+  alternatives: CardReplacementAlt[];
+}
+
+export interface ShareInfo {
+  share_token: string;
+  shareUrl: string;
+}
+
 export const getAIStatus = () =>
   http.get<OllamaStatus>('/ai/status');
 
@@ -128,5 +148,33 @@ export const getAITrimSuggestions = (deckId: string, model?: string) =>
 export const getAIWeaknessAnalysis = (deckId: string, model?: string) =>
   http.post<WeaknessAnalysis>(`/ai/decks/${deckId}/analyze`, { model });
 
+export const getAICardReplacement = (deckId: string, cardId: string, model?: string) =>
+  http.post<CardReplacementResult>(`/ai/decks/${deckId}/replace`, { card_id: cardId, model });
+
 export const importDeck = (deckId: string, text: string) =>
   http.post<ImportResult>(`/decks/${deckId}/import`, { text });
+
+// ─── Maybeboard ─────────────────────────────────────────────────────────────
+
+export const getMaybeboard = (deckId: string) =>
+  http.get<import('shared').DeckCardRow[]>(`/decks/${deckId}/maybeboard`);
+
+export const addToMaybeboard = (deckId: string, cardId: string, quantity = 1) =>
+  http.post(`/decks/${deckId}/maybeboard`, { card_id: cardId, quantity });
+
+export const removeFromMaybeboard = (deckId: string, cardId: string) =>
+  http.delete(`/decks/${deckId}/maybeboard/${cardId}`);
+
+export const moveMaybeboardToMain = (deckId: string, cardId: string) =>
+  http.post(`/decks/${deckId}/maybeboard/${cardId}/move`);
+
+// ─── Condivisione mazzo ──────────────────────────────────────────────────────
+
+export const shareDeck = (deckId: string) =>
+  http.post<ShareInfo>(`/decks/${deckId}/share`);
+
+export const unshareDeck = (deckId: string) =>
+  http.delete(`/decks/${deckId}/share`);
+
+export const getPublicDeck = (token: string) =>
+  http.get<Deck>(`/decks/public/${token}`);

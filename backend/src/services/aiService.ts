@@ -13,6 +13,7 @@ import {
   getDeckSuggestions as getDeckSuggestionsOllama,
   getTrimSuggestions as getTrimSuggestionsOllama,
   getDeckWeaknesses as getDeckWeaknessesOllama,
+  getCardReplacement as getCardReplacementOllama,
 } from './ollamaService';
 import {
   isGroqConfigured,
@@ -20,9 +21,10 @@ import {
   getSuggestionsGroq,
   getTrimSuggestionsGroq,
   getWeaknessAnalysisGroq,
+  getCardReplacementGroq,
 } from './groqService';
 
-export type { AISuggestions, CardSuggestion, ManaSuggestion, TrimSuggestions, CardCut, WeaknessAnalysis, DeckWeakness } from './ollamaService';
+export type { AISuggestions, CardSuggestion, ManaSuggestion, TrimSuggestions, CardCut, WeaknessAnalysis, DeckWeakness, CardReplacementResult, CardReplacementAlt } from './ollamaService';
 export type AIProvider = 'groq' | 'ollama';
 
 export function getActiveProvider(): AIProvider {
@@ -76,4 +78,16 @@ export async function getDeckWeaknesses(
     return getWeaknessAnalysisGroq(commander, currentCards, model);
   }
   return getDeckWeaknessesOllama(commander, currentCards, model);
+}
+
+export async function getCardReplacement(
+  commander: Card,
+  currentCards: Card[],
+  cardToReplace: Card,
+  model?: string
+): Promise<Awaited<ReturnType<typeof getCardReplacementOllama>>> {
+  if (getActiveProvider() === 'groq') {
+    return getCardReplacementGroq(commander, currentCards, cardToReplace, model);
+  }
+  return getCardReplacementOllama(commander, currentCards, cardToReplace, model);
 }

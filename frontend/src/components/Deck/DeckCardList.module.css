@@ -114,6 +114,54 @@
 .item:hover .removeBtn { opacity: 1; }
 .removeBtn:hover { color: #f87171; }
 
+.replaceBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+  line-height: 1;
+  padding: 0 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.item:hover .replaceBtn { opacity: 1; }
+.replaceBtn:hover { opacity: 1; filter: brightness(1.3); }
+
+/* Maybeboard */
+.maybeSection {
+  border-top: 1px dashed rgba(255,255,255,0.15);
+  padding-top: 12px;
+  margin-top: 4px;
+}
+
+.maybeTitle {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-muted);
+  margin-bottom: 6px;
+}
+
+.maybeCount { font-weight: 400; }
+
+.maybeItem {
+  opacity: 0.75;
+  border-left: 2px dashed rgba(255,255,255,0.2);
+}
+
+.moveBtn {
+  background: none;
+  border: none;
+  color: #60a5fa;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0 3px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.item:hover .moveBtn { opacity: 1; }
+.moveBtn:hover { color: #93c5fd; }
+
 .empty {
   display: flex;
   flex-direction: column;

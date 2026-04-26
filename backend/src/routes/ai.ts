@@ -8,6 +8,7 @@ import {
   getDeckSuggestions,
   getTrimSuggestions,
   getDeckWeaknesses,
+  getCardReplacement,
   getActiveProvider,
 } from '../services/aiService';
 import { searchCards } from '../services/scryfallService';
@@ -200,6 +201,66 @@ router.post('/decks/:id/analyze', async (req, res) => {
       return res.status(503).json({ message: msg });
     }
     return res.status(500).json({ message: "Errore durante l'analisi del mazzo." });
+  }
+});
+
+// POST /api/ai/decks/:id/replace  — suggerisci sostituzione per una carta specifica
+router.post('/decks/:id/replace', async (req, res) => {
+  const db = getDb();
+  const deck = db
+    .prepare('SELECT id, name, commander_id FROM decks WHERE id = ?')
+    .get(req.params.id) as { id: string; name: string; commander_id: string } | undefined;
+
+  if (!deck) return res.status(404).json({ message: 'Mazzo non trovato.' });
+
+  const { card_id, model } = req.body as { card_id?: string; model?: string };
+  if (!card_id) return res.status(400).json({ message: 'card_id è obbligatorio.' });
+
+  const available = await isAIAvailable();
+  if (!available) {
+    const provider = getActiveProvider();
+    return res.status(503).json({
+      message: provider === 'groq' ? 'GROQ_NOT_CONFIGURED' : 'OLLAMA_NOT_RUNNING',
+    });
+  }
+
+  try {
+    const commander = await getCardById(deck.commander_id);
+    const rows = getDeckCardRows(deck.id);
+    const cardMap = await hydrateCards(rows);
+    const cardToReplace = cardMap.get(card_id) ?? await getCardById(card_id);
+    const currentCards = Array.from(cardMap.values());
+
+    const result = await getCardReplacement(commander, currentCards, cardToReplace, model);
+
+    // Risolvi le alternative su Scryfall, filtra per color identity
+    const commanderColors = commander.color_identity;
+    const resolvedAlts: { name: string; reason: string; categories: string[]; bracket: number; isGameChanger: boolean; isMassLandDenial: boolean; card: unknown }[] = [];
+
+    for (const alt of result.alternatives.slice(0, 10)) {
+      if (resolvedAlts.length >= 5) break;
+      try {
+        const found = await searchCards(`!"${alt.name}"`, 1);
+        const card = found.data[0] ?? null;
+        if (card) {
+          const cardColors: string[] = [...((card as { color_identity?: string[] }).color_identity ?? [])];
+          const isLegal = cardColors.every((c) => (commanderColors as string[]).includes(c));
+          if (!isLegal) continue;
+        }
+        resolvedAlts.push({ ...alt, card });
+      } catch {
+        resolvedAlts.push({ ...alt, card: null });
+      }
+    }
+
+    return res.json({ cardToReplace: result.cardToReplace, alternatives: resolvedAlts });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('Errore AI replace:', msg);
+    if (msg.startsWith('OLLAMA_NOT_RUNNING') || msg.startsWith('MODEL_NOT_FOUND') || msg.startsWith('GROQ_')) {
+      return res.status(503).json({ message: msg });
+    }
+    return res.status(500).json({ message: 'Errore durante la generazione dei sostituti.' });
   }
 });
 

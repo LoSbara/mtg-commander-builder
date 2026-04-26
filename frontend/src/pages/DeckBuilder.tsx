@@ -6,9 +6,10 @@ import { CommanderSearch } from '../components/Search/CommanderSearch';
 import { DeckCardList } from '../components/Deck/DeckCardList';
 import { DeckStatsPanel } from '../components/Deck/DeckStatsPanel';
 import { AIAssistant } from '../components/AI/AIAssistant';
+import { AIReplacePanel } from '../components/AI/AIReplacePanel';
 import { ImportModal } from '../components/Import/ImportModal';
 import { HandSimulator } from '../components/Deck/HandSimulator';
-import type { Card, DeckStats, ValidationResult } from 'shared';
+import type { Card, DeckStats, ValidationResult, DeckCardRow } from 'shared';
 import * as api from '../api';
 import styles from './DeckBuilder.module.css';
 
@@ -45,6 +46,18 @@ export default function DeckBuilder() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showHandSimulator, setShowHandSimulator] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  // AI Replace
+  const [replaceCardId, setReplaceCardId] = useState<string | null>(null);
+
+  // Maybeboard
+  const [maybeboardCards, setMaybeboardCards] = useState<DeckCardRow[]>([]);
+
+  // Share
+  const [shareToken, setShareToken] = useState<string | null>(null);
+  const [shareUrl, setShareUrl] = useState('');
+  const [sharing, setSharing] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const isNew = !id;
 
@@ -113,6 +126,85 @@ export default function DeckBuilder() {
       api.validateDeck(currentDeck.id).then(({ data }) => setValidation(data)).catch(() => setValidation(null)),
     ]).finally(() => setStatsLoading(false));
   }, [currentDeck]);
+
+  // Carica maybeboard e share_token quando il mazzo cambia
+  useEffect(() => {
+    if (!currentDeck?.id) { setMaybeboardCards([]); setShareToken(null); return; }
+    api.getMaybeboard(currentDeck.id).then(({ data }) => setMaybeboardCards(data)).catch(() => setMaybeboardCards([]));
+    setShareToken((currentDeck as { share_token?: string | null }).share_token ?? null);
+  }, [currentDeck]);
+
+  // Maybeboard handlers
+  const handleAddToMaybeboard = useCallback(
+    async (card: Card) => {
+      if (!currentDeck) return;
+      setCardCache((prev) => new Map(prev).set(card.id, card));
+      await api.addToMaybeboard(currentDeck.id, card.id);
+      const { data } = await api.getMaybeboard(currentDeck.id);
+      setMaybeboardCards(data);
+    },
+    [currentDeck]
+  );
+
+  const handleRemoveFromMaybeboard = useCallback(
+    async (cardId: string) => {
+      if (!currentDeck) return;
+      await api.removeFromMaybeboard(currentDeck.id, cardId);
+      setMaybeboardCards((prev) => prev.filter((r) => r.card_id !== cardId));
+    },
+    [currentDeck]
+  );
+
+  const handleMoveToMain = useCallback(
+    async (cardId: string) => {
+      if (!currentDeck) return;
+      await api.moveMaybeboardToMain(currentDeck.id, cardId);
+      setMaybeboardCards((prev) => prev.filter((r) => r.card_id !== cardId));
+      await fetchDeck(currentDeck.id);
+    },
+    [currentDeck, fetchDeck]
+  );
+
+  // Share handlers
+  async function handleShareToggle() {
+    if (!currentDeck) return;
+    setSharing(true);
+    try {
+      if (shareToken) {
+        await api.unshareDeck(currentDeck.id);
+        setShareToken(null);
+        setShareUrl('');
+      } else {
+        const { data } = await api.shareDeck(currentDeck.id);
+        setShareToken(data.share_token);
+        setShareUrl(data.shareUrl);
+      }
+    } catch (err) {
+      console.error('Share error:', err);
+    } finally {
+      setSharing(false);
+    }
+  }
+
+  async function handleCopyLink() {
+    if (!shareUrl) return;
+    await navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  // AI Replace: accept — rimuove vecchia carta, aggiunge nuova
+  const handleReplaceAccept = useCallback(
+    async (newCard: Card, oldCardId: string) => {
+      if (!currentDeck) return;
+      setReplaceCardId(null);
+      setCardCache((prev) => new Map(prev).set(newCard.id, newCard));
+      await api.removeCardFromDeck(currentDeck.id, oldCardId);
+      await api.addCardToDeck(currentDeck.id, newCard.id);
+      await fetchDeck(currentDeck.id);
+    },
+    [currentDeck, fetchDeck]
+  );
 
   // Crea il mazzo e il redirect
   async function handleCreate() {
@@ -224,6 +316,19 @@ export default function DeckBuilder() {
           >
             📥 Importa
           </button>
+          <button
+            className={styles.btnShare}
+            onClick={handleShareToggle}
+            disabled={!currentDeck || sharing}
+            title={shareToken ? 'Rimuovi link di condivisione' : 'Condividi mazzo (link pubblico)'}
+          >
+            {sharing ? '…' : shareToken ? '🔗 Condiviso' : '🔗 Condividi'}
+          </button>
+          {shareToken && shareUrl && (
+            <button className={styles.btnCopyLink} onClick={handleCopyLink} title="Copia link">
+              {copied ? '✓' : '📋'}
+            </button>
+          )}
           <div className={styles.exportWrapper} ref={exportMenuRef}>
             <button
               className={styles.btnExport}
@@ -270,7 +375,7 @@ export default function DeckBuilder() {
 
           <div className={styles.tabContent}>
             {tab === 'search' && (
-              <CardSearch onAddCard={handleAddCard} deckCardIds={deckCardIds} />
+              <CardSearch onAddCard={handleAddCard} deckCardIds={deckCardIds} onAddToMaybeboard={handleAddToMaybeboard} />
             )}
             {tab === 'ai' && currentDeck && (
             <AIAssistant
@@ -331,6 +436,10 @@ export default function DeckBuilder() {
               commanderId={currentDeck.commander_id}
               onRemove={handleRemoveCard}
               totalCount={totalCards}
+              onRequestReplace={(cardId) => setReplaceCardId(cardId)}
+              maybeboardCards={maybeboardCards}
+              onRemoveFromMaybeboard={handleRemoveFromMaybeboard}
+              onMoveToMain={handleMoveToMain}
             />
           )}
         </section>
@@ -357,6 +466,17 @@ export default function DeckBuilder() {
           cards={currentDeck.cards}
           cardCache={cardCache}
           onClose={() => setShowHandSimulator(false)}
+        />
+      )}
+
+      {replaceCardId && currentDeck && (
+        <AIReplacePanel
+          deckId={currentDeck.id}
+          cardId={replaceCardId}
+          cardName={cardCache.get(replaceCardId)?.name ?? replaceCardId}
+          commanderColors={cardCache.get(currentDeck.commander_id)?.color_identity ?? []}
+          onAccept={handleReplaceAccept}
+          onClose={() => setReplaceCardId(null)}
         />
       )}
     </div>

@@ -43,5 +43,9 @@ export function initDb(): void {
     );
   `);
 
+  // Migrazioni (sicure da eseguire più volte: ignorano errori se la colonna esiste già)
+  try { database.exec(`ALTER TABLE deck_cards ADD COLUMN is_maybeboard INTEGER NOT NULL DEFAULT 0`); } catch { /* già presente */ }
+  try { database.exec(`ALTER TABLE decks ADD COLUMN share_token TEXT`); } catch { /* già presente */ }
+
   console.log('Database SQLite inizializzato.');
 }

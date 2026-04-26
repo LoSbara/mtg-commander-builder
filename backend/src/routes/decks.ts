@@ -8,6 +8,10 @@ import {
   validateDeck,
   computeDeckStats,
   getDeckCardRows,
+  getMaybeboardRows,
+  addToMaybeboard,
+  removeFromMaybeboard,
+  moveMaybeboardToMain,
   hydrateCards,
   formatDeckExport,
   type ExportFormat,
@@ -16,6 +20,22 @@ import { parseDeckList } from '../services/importService';
 import { searchCards } from '../services/scryfallService';
 
 const router = Router();
+
+// GET /api/decks/public/:token  — vista pubblica di un mazzo condiviso
+router.get('/public/:token', (req, res) => {
+  const db = getDb();
+  const deck = db
+    .prepare('SELECT * FROM decks WHERE share_token = ?')
+    .get(req.params.token) as Record<string, unknown> | undefined;
+
+  if (!deck) {
+    return res.status(404).json({ message: 'Mazzo non trovato o link non valido.' });
+  }
+
+  const cards = getDeckCardRows(deck.id as string);
+  const maybeboard = getMaybeboardRows(deck.id as string);
+  return res.json({ ...deck, cards, maybeboard });
+});
 
 // GET /api/decks
 router.get('/', (_req, res) => {
@@ -38,7 +58,8 @@ router.get('/:id', (req, res) => {
   }
 
   const cards = getDeckCardRows(req.params.id);
-  return res.json({ ...deck, cards });
+  const maybeboard = getMaybeboardRows(req.params.id);
+  return res.json({ ...deck, cards, maybeboard });
 });
 
 // POST /api/decks
@@ -234,6 +255,71 @@ router.post('/:id/import', async (req, res) => {
     skipped,
     total: existingIds.size,
   });
+});
+
+// ─── Maybeboard ──────────────────────────────────────────────────────────
+
+// GET /api/decks/:id/maybeboard
+router.get('/:id/maybeboard', (req, res) => {
+  const db = getDb();
+  const deck = db.prepare('SELECT id FROM decks WHERE id = ?').get(req.params.id);
+  if (!deck) return res.status(404).json({ message: 'Mazzo non trovato.' });
+  return res.json(getMaybeboardRows(req.params.id));
+});
+
+// POST /api/decks/:id/maybeboard  — aggiunge carta al maybeboard
+router.post('/:id/maybeboard', (req, res) => {
+  const db = getDb();
+  const deck = db.prepare('SELECT id FROM decks WHERE id = ?').get(req.params.id);
+  if (!deck) return res.status(404).json({ message: 'Mazzo non trovato.' });
+
+  const { card_id, quantity = 1 } = req.body as { card_id?: string; quantity?: number };
+  if (!card_id) return res.status(400).json({ message: 'card_id è obbligatorio.' });
+
+  addToMaybeboard(req.params.id, card_id, quantity);
+  return res.status(201).json({ deck_id: req.params.id, card_id, quantity, is_maybeboard: 1 });
+});
+
+// DELETE /api/decks/:id/maybeboard/:cardId  — rimuove dal maybeboard
+router.delete('/:id/maybeboard/:cardId', (req, res) => {
+  const removed = removeFromMaybeboard(req.params.id, req.params.cardId);
+  if (!removed) return res.status(404).json({ message: 'Carta non trovata nel maybeboard.' });
+  return res.status(204).send();
+});
+
+// POST /api/decks/:id/maybeboard/:cardId/move  — sposta dal maybeboard al mazzo principale
+router.post('/:id/maybeboard/:cardId/move', (req, res) => {
+  const moved = moveMaybeboardToMain(req.params.id, req.params.cardId);
+  if (!moved) return res.status(404).json({ message: 'Carta non trovata nel maybeboard.' });
+  return res.json({ deck_id: req.params.id, card_id: req.params.cardId, moved: true });
+});
+
+// ─── Condivisione mazzo ────────────────────────────────────────────────────
+
+// POST /api/decks/:id/share  — genera un token di condivisione pubblico
+router.post('/:id/share', (req, res) => {
+  const db = getDb();
+  const deck = db.prepare('SELECT id, share_token FROM decks WHERE id = ?').get(req.params.id) as
+    | { id: string; share_token: string | null }
+    | undefined;
+
+  if (!deck) return res.status(404).json({ message: 'Mazzo non trovato.' });
+
+  const token = deck.share_token ?? randomUUID();
+  db.prepare('UPDATE decks SET share_token = ? WHERE id = ?').run(token, deck.id);
+
+  const origin = (req.headers.origin as string) ?? `http://localhost:5173`;
+  return res.json({ share_token: token, shareUrl: `${origin}/share/${token}` });
+});
+
+// DELETE /api/decks/:id/share  — rimuove il link di condivisione
+router.delete('/:id/share', (req, res) => {
+  const db = getDb();
+  const existing = db.prepare('SELECT id FROM decks WHERE id = ?').get(req.params.id);
+  if (!existing) return res.status(404).json({ message: 'Mazzo non trovato.' });
+
+  db.prepare('UPDATE decks SET share_token = NULL WHERE id = ?').run(req.params.id);
+  return res.status(204).send();
 });
 
 // GET /api/decks/:id/export?format=txt|mtgo|moxfield
