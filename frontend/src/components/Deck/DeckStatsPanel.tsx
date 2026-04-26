@@ -105,6 +105,33 @@ export function DeckStatsPanel({ stats, loading, validation }: Props) {
           <p className={styles.price}>€ {stats.estimatedPriceEur.toFixed(2)}</p>
         </section>
       )}
+
+      {stats.functionalStats && (
+        <section className={styles.section}>
+          <h4 className={styles.sectionTitle}>Categorie funzionali</h4>
+          <div className={styles.funcList}>
+            {FUNCTIONAL_LABELS.map(({ key, label, target, color }) => {
+              const val = (stats.functionalStats as Record<string, number>)[key] ?? 0;
+              const pct = Math.min((val / target) * 100, 100);
+              const status = val >= target ? 'ok' : val >= target * 0.6 ? 'warn' : 'low';
+              return (
+                <div key={key} className={styles.funcRow}>
+                  <span className={styles.funcLabel}>{label}</span>
+                  <div className={styles.funcBarTrack}>
+                    <div
+                      className={`${styles.funcBarFill} ${styles[`func_${status}`]}`}
+                      style={{ width: `${pct}%`, background: color }}
+                    />
+                  </div>
+                  <span className={`${styles.funcVal} ${styles[`func_${status}`]}`}>
+                    {val}<span className={styles.funcTarget}>/{target}</span>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
@@ -119,3 +146,13 @@ const TIPO: Record<string, string> = {
   lands: 'Terre',
   other: 'Altro',
 };
+
+const FUNCTIONAL_LABELS = [
+  { key: 'ramp',       label: '⚡ Rampa',      target: 10, color: '#15803d' },
+  { key: 'draw',       label: '🃏 Draw',        target: 10, color: '#1d4ed8' },
+  { key: 'removal',    label: '🗡 Rimozione',   target: 10, color: '#b91c1c' },
+  { key: 'boardWipe',  label: '💥 Board Wipe',  target: 3,  color: '#9333ea' },
+  { key: 'counter',    label: '🛡 Counter',     target: 5,  color: '#0891b2' },
+  { key: 'tutor',      label: '📚 Tutor',       target: 5,  color: '#d97706' },
+  { key: 'protection', label: '🔒 Protezione',  target: 5,  color: '#64748b' },
+];

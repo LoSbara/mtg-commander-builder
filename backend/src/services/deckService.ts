@@ -182,7 +182,110 @@ export async function computeDeckStats(deckId: string): Promise<DeckStats> {
   stats.averageCmc = nonLandCount > 0 ? Math.round((totalCmc / nonLandCount) * 100) / 100 : 0;
   if (hasPrices) stats.estimatedPriceEur = Math.round(estimatedPriceEur * 100) / 100;
 
+  // Statistiche funzionali
+  const functional = { ramp: 0, draw: 0, removal: 0, boardWipe: 0, counter: 0, tutor: 0, protection: 0 };
+  for (const row of rows) {
+    const card = cardMap.get(row.card_id);
+    if (!card) continue;
+    for (const cat of detectFunctional(card)) {
+      (functional as Record<string, number>)[cat]++;
+    }
+  }
+  stats.functionalStats = functional;
+
   return stats;
+}
+
+function detectFunctional(card: Card): string[] {
+  const text = (card.oracle_text ?? '').toLowerCase();
+  const type = (card.type_line ?? '').toLowerCase();
+  const isLand = type.includes('land');
+  const cats: string[] = [];
+
+  // RAMP: non-land mana producers + land-fetching spells
+  if (!isLand) {
+    if (
+      text.includes('add {') ||
+      text.includes('add one mana') ||
+      text.includes('add two mana') ||
+      text.includes('add three mana') ||
+      text.includes('add mana of any color')
+    ) {
+      cats.push('ramp');
+    } else if (
+      text.includes('search your library for') &&
+      (text.includes(' land card') || text.includes(' land onto'))
+    ) {
+      cats.push('ramp');
+    }
+  }
+
+  // DRAW
+  if (
+    text.includes('draw a card') ||
+    text.includes('draws a card') ||
+    text.includes('draw cards') ||
+    /draw (x|\d+|two|three|four|five) cards?/.test(text)
+  ) {
+    cats.push('draw');
+  }
+
+  // BOARD WIPE (check before removal to avoid double-counting)
+  const isBoardWipe =
+    text.includes('destroy all') ||
+    text.includes('exile all') ||
+    (text.includes('each creature') && (text.includes('destroy') || text.includes('exile') || / -\d+\/-\d+/.test(text))) ||
+    (/all creatures/.test(text) && (text.includes('destroy') || text.includes('exile')));
+  if (isBoardWipe) cats.push('boardWipe');
+
+  // REMOVAL (single-target, not a board wipe)
+  if (
+    !isBoardWipe &&
+    (
+      text.includes('destroy target') ||
+      text.includes('exile target') ||
+      (text.includes('return target') && text.includes("to its owner's hand"))
+    )
+  ) {
+    cats.push('removal');
+  }
+
+  // COUNTER MAGIC
+  if (
+    text.includes('counter target spell') ||
+    text.includes('counter target creature') ||
+    text.includes('counter target artifact') ||
+    text.includes('counter target activated') ||
+    text.includes('counter that spell')
+  ) {
+    cats.push('counter');
+  }
+
+  // TUTOR (search for non-land)
+  if (
+    !isLand &&
+    text.includes('search your library for') &&
+    !text.includes(' land card') &&
+    !text.includes('basic land') &&
+    !text.includes('land onto')
+  ) {
+    cats.push('tutor');
+  }
+
+  // PROTECTION
+  if (
+    !isLand &&
+    (
+      text.includes('hexproof') ||
+      text.includes('indestructible') ||
+      text.includes('shroud') ||
+      text.includes('protection from')
+    )
+  ) {
+    cats.push('protection');
+  }
+
+  return cats;
 }
 
 // ─── Aggiunta/rimozione carte ──────────────────────────────────────────────

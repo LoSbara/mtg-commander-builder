@@ -93,6 +93,21 @@ export interface TrimSuggestions {
   cuts: CardCut[];
 }
 
+export interface DeckWeakness {
+  category: string;
+  severity: 'low' | 'medium' | 'high';
+  description: string;
+  suggestions: string[];
+}
+
+export interface WeaknessAnalysis {
+  overallAssessment: string;
+  bracket: 1 | 2 | 3 | 4 | 5;
+  weaknesses: DeckWeakness[];
+  strengths: string[];
+  winConditions: string[];
+}
+
 export interface ImportResult {
   imported: number;
   importedCards: { name: string; id: string }[];
@@ -109,6 +124,9 @@ export const getAISuggestions = (deckId: string, model?: string) =>
 
 export const getAITrimSuggestions = (deckId: string, model?: string) =>
   http.post<TrimSuggestions>(`/ai/decks/${deckId}/trim`, { model });
+
+export const getAIWeaknessAnalysis = (deckId: string, model?: string) =>
+  http.post<WeaknessAnalysis>(`/ai/decks/${deckId}/analyze`, { model });
 
 export const importDeck = (deckId: string, text: string) =>
   http.post<ImportResult>(`/decks/${deckId}/import`, { text });

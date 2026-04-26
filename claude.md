@@ -185,6 +185,15 @@ MTG-deck-creater/
 | Integrazione EDHREC + salt score     | ✅ Completato  |
 | Ban list Commander ufficiale         | ✅ Completato  |
 | Commander Brackets (1-5) + Game Changer + Mass Land Denial | ✅ Completato |
+| Card preview al hover (DeckCardList) | ✅ Completato |
+| Statistiche funzionali (rampa/draw/rimozione/boardwipe/ecc.) | ✅ Completato |
+| AI Analisi debolezze mazzo (`/analyze`) | ✅ Completato |
+| Simulatore mano iniziale (7 carte) | ✅ Completato |
+| Sostituzione carte via AI (`/replace`) | ⬜ Da fare |
+| Partner commanders (2 commander) | ⬜ Da fare |
+| Maybeboard | ⬜ Da fare |
+| Condivisione mazzo (link pubblico) | ⬜ Da fare |
+| Ricerca avanzata carte con filtri | ⬜ Da fare |
 
 ---
 

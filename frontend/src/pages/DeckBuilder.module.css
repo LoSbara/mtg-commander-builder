@@ -270,6 +270,28 @@
   flex-shrink: 0;
 }
 
+.deckPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.btnSimulator {
+  padding: 4px 12px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 6px;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.btnSimulator:hover {
+  background: rgba(255,255,255,0.12);
+  color: var(--color-text);
+}
+
 @media (max-width: 1024px) {
   .layout {
     grid-template-columns: 1fr 1fr;

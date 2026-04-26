@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { DeckCardRow, Card } from 'shared';
 import styles from './DeckCardList.module.css';
 import { ManaCost } from '../ManaSymbol/ManaSymbol';
@@ -12,6 +13,8 @@ interface Props {
 }
 
 export function DeckCardList({ cards, cardCache, commanderId, onRemove, totalCount }: Props) {
+  const [tooltip, setTooltip] = useState<{ imgUrl: string; x: number; y: number } | null>(null);
+
   if (cards.length === 0) {
     return (
       <div className={styles.empty}>
@@ -24,53 +27,87 @@ export function DeckCardList({ cards, cardCache, commanderId, onRemove, totalCou
   // Raggruppa per tipo
   const groups = groupByType(cards, cardCache);
 
+  function handleMouseEnter(e: React.MouseEvent, card: Card | undefined) {
+    const imgUrl = card?.image_uris?.normal ?? card?.card_faces?.[0]?.image_uris?.normal;
+    if (!imgUrl) return;
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = rect.right + 8;
+    const y = rect.top - 20;
+    setTooltip({ imgUrl, x, y });
+  }
+
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <span className={styles.total}>{totalCount} / 100 carte</span>
-        <div className={styles.bar}>
-          <div
-            className={styles.barFill}
-            style={{ width: `${Math.min((totalCount / 100) * 100, 100)}%` }}
-          />
+    <>
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <span className={styles.total}>{totalCount} / 100 carte</span>
+          <div className={styles.bar}>
+            <div
+              className={styles.barFill}
+              style={{ width: `${Math.min((totalCount / 100) * 100, 100)}%` }}
+            />
+          </div>
         </div>
+
+        {Object.entries(groups).map(([groupName, groupCards]) =>
+          groupCards.length > 0 ? (
+            <section key={groupName} className={styles.group}>
+              <h4 className={styles.groupTitle}>
+                {groupName} <span className={styles.groupCount}>({groupCards.length})</span>
+              </h4>
+              <ul className={styles.list}>
+                {groupCards.map((row) => {
+                  const card = cardCache.get(row.card_id);
+                  const isCmd = row.card_id === commanderId;
+                  return (
+                    <li
+                      key={row.card_id}
+                      className={`${styles.item} ${isCmd ? styles.commander : ''}`}
+                      onMouseEnter={(e) => handleMouseEnter(e, card)}
+                      onMouseLeave={() => setTooltip(null)}
+                    >
+                      <span className={styles.qty}>{row.quantity}×</span>
+                      <span className={styles.cardName}>{card?.name ?? row.card_id}</span>
+                      {card?.mana_cost && (
+                        <ManaCost cost={card.mana_cost} size="sm" />
+                      )}
+                      {isCmd && <span className={styles.cmdBadge}>CMD</span>}
+                      {!isCmd && (
+                        <button
+                          className={styles.removeBtn}
+                          onClick={() => onRemove(row.card_id)}
+                          aria-label={`Rimuovi ${card?.name ?? row.card_id}`}
+                        >
+                          ×
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ) : null
+        )}
       </div>
 
-      {Object.entries(groups).map(([groupName, groupCards]) =>
-        groupCards.length > 0 ? (
-          <section key={groupName} className={styles.group}>
-            <h4 className={styles.groupTitle}>
-              {groupName} <span className={styles.groupCount}>({groupCards.length})</span>
-            </h4>
-            <ul className={styles.list}>
-              {groupCards.map((row) => {
-                const card = cardCache.get(row.card_id);
-                const isCmd = row.card_id === commanderId;
-                return (
-                  <li key={row.card_id} className={`${styles.item} ${isCmd ? styles.commander : ''}`}>
-                    <span className={styles.qty}>{row.quantity}×</span>
-                    <span className={styles.cardName}>{card?.name ?? row.card_id}</span>
-                    {card?.mana_cost && (
-                      <ManaCost cost={card.mana_cost} size="sm" />
-                    )}
-                    {isCmd && <span className={styles.cmdBadge}>CMD</span>}
-                    {!isCmd && (
-                      <button
-                        className={styles.removeBtn}
-                        onClick={() => onRemove(row.card_id)}
-                        aria-label={`Rimuovi ${card?.name ?? row.card_id}`}
-                      >
-                        ×
-                      </button>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        ) : null
+      {tooltip && (
+        <div
+          style={{
+            position: 'fixed',
+            left: Math.min(tooltip.x, window.innerWidth - 220),
+            top: Math.max(8, Math.min(tooltip.y, window.innerHeight - 320)),
+            zIndex: 9999,
+            pointerEvents: 'none',
+          }}
+        >
+          <img
+            src={tooltip.imgUrl}
+            alt=""
+            style={{ width: 200, borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.85)' }}
+          />
+        </div>
       )}
-    </div>
+    </>
   );
 }
 

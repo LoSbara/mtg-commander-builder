@@ -7,6 +7,7 @@ import {
   getAvailableModels,
   getDeckSuggestions,
   getTrimSuggestions,
+  getDeckWeaknesses,
   getActiveProvider,
 } from '../services/aiService';
 import { searchCards } from '../services/scryfallService';
@@ -162,6 +163,43 @@ router.post('/decks/:id/trim', async (req, res) => {
       return res.status(503).json({ message: msg });
     }
     return res.status(500).json({ message: "Errore durante l'analisi del taglio." });
+  }
+});
+
+// POST /api/ai/decks/:id/analyze  — analisi debolezze/punti di forza del mazzo
+router.post('/decks/:id/analyze', async (req, res) => {
+  const db = getDb();
+  const deck = db
+    .prepare('SELECT id, name, commander_id FROM decks WHERE id = ?')
+    .get(req.params.id) as { id: string; name: string; commander_id: string } | undefined;
+
+  if (!deck) return res.status(404).json({ message: 'Mazzo non trovato.' });
+
+  const { model } = req.body as { model?: string };
+
+  const available = await isAIAvailable();
+  if (!available) {
+    const provider = getActiveProvider();
+    return res.status(503).json({
+      message: provider === 'groq' ? 'GROQ_NOT_CONFIGURED' : 'OLLAMA_NOT_RUNNING',
+    });
+  }
+
+  try {
+    const commander = await getCardById(deck.commander_id);
+    const rows = getDeckCardRows(deck.id);
+    const cardMap = await hydrateCards(rows);
+    const currentCards = Array.from(cardMap.values());
+
+    const result = await getDeckWeaknesses(commander, currentCards, model);
+    return res.json(result);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('Errore AI analyze:', msg);
+    if (msg.startsWith('OLLAMA_NOT_RUNNING') || msg.startsWith('MODEL_NOT_FOUND') || msg.startsWith('GROQ_')) {
+      return res.status(503).json({ message: msg });
+    }
+    return res.status(500).json({ message: "Errore durante l'analisi del mazzo." });
   }
 });
 

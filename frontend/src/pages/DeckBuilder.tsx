@@ -7,6 +7,7 @@ import { DeckCardList } from '../components/Deck/DeckCardList';
 import { DeckStatsPanel } from '../components/Deck/DeckStatsPanel';
 import { AIAssistant } from '../components/AI/AIAssistant';
 import { ImportModal } from '../components/Import/ImportModal';
+import { HandSimulator } from '../components/Deck/HandSimulator';
 import type { Card, DeckStats, ValidationResult } from 'shared';
 import * as api from '../api';
 import styles from './DeckBuilder.module.css';
@@ -42,6 +43,7 @@ export default function DeckBuilder() {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showHandSimulator, setShowHandSimulator] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
 
   const isNew = !id;
@@ -310,7 +312,18 @@ export default function DeckBuilder() {
 
         {/* Pannello centrale — lista mazzo */}
         <section className={styles.deckPanel}>
-          <h2 className={styles.panelTitle}>Mazzo</h2>
+          <div className={styles.deckPanelHeader}>
+            <h2 className={styles.panelTitle}>Mazzo</h2>
+            {currentDeck && totalCards > 0 && (
+              <button
+                className={styles.btnSimulator}
+                onClick={() => setShowHandSimulator(true)}
+                title="Simula una mano iniziale"
+              >
+                🃏 Mano iniziale
+              </button>
+            )}
+          </div>
           {currentDeck && (
             <DeckCardList
               cards={currentDeck.cards}
@@ -336,6 +349,14 @@ export default function DeckBuilder() {
           onImported={() => {
             fetchDeck(currentDeck.id);
           }}
+        />
+      )}
+
+      {showHandSimulator && currentDeck && (
+        <HandSimulator
+          cards={currentDeck.cards}
+          cardCache={cardCache}
+          onClose={() => setShowHandSimulator(false)}
         />
       )}
     </div>

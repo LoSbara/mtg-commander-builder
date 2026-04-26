@@ -172,3 +172,52 @@
   font-weight: 700;
   color: var(--color-primary);
 }
+
+/* Categorie funzionali */
+.funcList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.funcRow {
+  display: grid;
+  grid-template-columns: 90px 1fr 44px;
+  align-items: center;
+  gap: 6px;
+}
+
+.funcLabel {
+  font-size: 0.72rem;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.funcBarTrack {
+  height: 6px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.funcBarFill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.3s ease;
+  opacity: 0.85;
+}
+
+.funcVal {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.funcTarget {
+  font-weight: 400;
+  opacity: 0.5;
+}
+
+.func_ok  { color: #4ade80; }
+.func_warn { color: #fbbf24; }
+.func_low  { color: #f87171; }

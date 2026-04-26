@@ -499,6 +499,11 @@
   color: #f08060;
 }
 
+.modeTabAnalyze.modeTabActive {
+  border-color: #a78bfa;
+  color: #a78bfa;
+}
+
 .btnTrim {
   background: #8b2020;
   border: none;
@@ -513,6 +518,121 @@
 }
 .btnTrim:hover:not(:disabled) { opacity: 0.85; }
 .btnTrim:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btnAnalyze {
+  background: #4c1d95;
+  border: none;
+  color: #fff;
+  border-radius: 6px;
+  padding: 0.45rem 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.btnAnalyze:hover:not(:disabled) { opacity: 0.85; }
+.btnAnalyze:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Analisi debolezze */
+.analyzeHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.analyzeList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.analyzeList li {
+  font-size: 0.78rem;
+  color: var(--color-muted);
+  padding-left: 12px;
+  position: relative;
+}
+
+.analyzeList li::before {
+  content: '▸';
+  position: absolute;
+  left: 0;
+  color: var(--color-primary);
+}
+
+.weaknessList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.weaknessCard {
+  background: rgba(255,255,255,0.04);
+  border-radius: 8px;
+  padding: 10px 12px;
+  border-left: 3px solid transparent;
+}
+
+.severity_high  { border-left-color: #ef4444 !important; }
+.severity_medium { border-left-color: #f59e0b !important; }
+.severity_low   { border-left-color: #22c55e !important; }
+
+.weaknessHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.weaknessCategory {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.severityBadge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.07);
+  white-space: nowrap;
+}
+
+.weaknessDesc {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  margin: 0 0 6px;
+  line-height: 1.4;
+}
+
+.weaknessSuggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.suggestLabel {
+  font-size: 0.68rem;
+  color: var(--color-muted);
+  margin-right: 2px;
+}
+
+.suggestCard {
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: rgba(124,58,237,0.18);
+  color: #a78bfa;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
 
 .btnRemove {
   background: #5a1a1a !important;

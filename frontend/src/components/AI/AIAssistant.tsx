@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Card } from 'shared';
 import * as api from '../../api';
-import type { AISuggestions, CardSuggestion, OllamaStatus, TrimSuggestions } from '../../api';
+import type { AISuggestions, CardSuggestion, OllamaStatus, TrimSuggestions, WeaknessAnalysis } from '../../api';
 import styles from './AIAssistant.module.css';
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -33,11 +33,14 @@ export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard, tot
   const [suggestions, setSuggestions] = useState<AISuggestions | null>(null);
   const [error, setError] = useState('');
   const [addedCards, setAddedCards] = useState<Set<string>>(new Set());
-  const [aiMode, setAiMode] = useState<'suggest' | 'trim'>('suggest');
+  const [aiMode, setAiMode] = useState<'suggest' | 'trim' | 'analyze'>('suggest');
   const [trimming, setTrimming] = useState(false);
   const [trimResult, setTrimResult] = useState<TrimSuggestions | null>(null);
   const [trimError, setTrimError] = useState('');
   const [removedCards, setRemovedCards] = useState<Set<string>>(new Set());
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState<WeaknessAnalysis | null>(null);
+  const [analysisError, setAnalysisError] = useState('');
 
   useEffect(() => {
     api.getAIStatus()
@@ -64,6 +67,21 @@ export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard, tot
       setTrimError(api.extractErrorMessage(err));
     } finally {
       setTrimming(false);
+    }
+  }
+
+  async function handleAnalyze() {
+    if (!commanderCard) return;
+    setAnalyzing(true);
+    setAnalysisError('');
+    setAnalysis(null);
+    try {
+      const { data } = await api.getAIWeaknessAnalysis(deckId, selectedModel || undefined);
+      setAnalysis(data);
+    } catch (err) {
+      setAnalysisError(api.extractErrorMessage(err));
+    } finally {
+      setAnalyzing(false);
     }
   }
 
@@ -161,18 +179,22 @@ export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard, tot
           <span className={styles.providerBadge} data-provider={status.provider}>
             {status.provider === 'groq' ? '⚡ Groq' : '🤖 Ollama'}
           </span>
-          {totalCards > 100 && (
-            <div className={styles.modeTabs}>
+          <div className={styles.modeTabs}>
               <button
                 className={`${styles.modeTab} ${aiMode === 'suggest' ? styles.modeTabActive : ''}`}
                 onClick={() => setAiMode('suggest')}
               >✨ Suggerisci</button>
               <button
-                className={`${styles.modeTab} ${styles.modeTabTrim} ${aiMode === 'trim' ? styles.modeTabActive : ''}`}
-                onClick={() => setAiMode('trim')}
-              >✂️ Taglia ({totalCards - 100} extra)</button>
+                className={`${styles.modeTab} ${styles.modeTabAnalyze} ${aiMode === 'analyze' ? styles.modeTabActive : ''}`}
+                onClick={() => setAiMode('analyze')}
+              >🔍 Analisi</button>
+              {totalCards > 100 && (
+                <button
+                  className={`${styles.modeTab} ${styles.modeTabTrim} ${aiMode === 'trim' ? styles.modeTabActive : ''}`}
+                  onClick={() => setAiMode('trim')}
+                >✂️ Taglia ({totalCards - 100})</button>
+              )}
             </div>
-          )}
         </div>
         <div className={styles.headerBottom}>
           <div className={styles.modelSelector}>
@@ -181,14 +203,14 @@ export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard, tot
               className={styles.modelSelect}
               value={selectedModel}
               onChange={(e) => setSelectedModel(e.target.value)}
-              disabled={generating || trimming}
+              disabled={generating || trimming || analyzing}
             >
               {status.models.map((m) => (
                 <option key={m} value={m}>{m}</option>
               ))}
             </select>
           </div>
-          {aiMode === 'suggest' ? (
+          {aiMode === 'suggest' && (
             <button
               className={styles.btnGenerate}
               onClick={handleGenerate}
@@ -202,7 +224,23 @@ export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard, tot
                 </span>
               ) : '✨ Analizza commander'}
             </button>
-          ) : (
+          )}
+          {aiMode === 'analyze' && (
+            <button
+              className={styles.btnAnalyze}
+              onClick={handleAnalyze}
+              disabled={analyzing || !commanderCard}
+              title={!commanderCard ? 'Seleziona prima un commander' : ''}
+            >
+              {analyzing ? (
+                <span className={styles.generating}>
+                  <span className={styles.spinner} />
+                  Analisi in corso…
+                </span>
+              ) : '🔍 Analizza debolezze'}
+            </button>
+          )}
+          {aiMode === 'trim' && (
             <button
               className={styles.btnTrim}
               onClick={handleTrim}
@@ -235,6 +273,77 @@ export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard, tot
       )}
 
       {error && <div className={styles.error}>{error}</div>}
+
+      {/* ANALYZE MODE */}
+      {aiMode === 'analyze' && analyzing && (
+        <div className={styles.thinkingBox}>
+          <p>🔍 Analisi struttura del mazzo di <strong>{commanderCard?.name}</strong>…</p>
+          <p className={styles.thinkingHint}>
+            {status.provider === 'groq' ? 'Risposta in ~15 secondi con Groq.' : 'Ci vogliono 60–120 secondi la prima volta.'}
+          </p>
+        </div>
+      )}
+
+      {aiMode === 'analyze' && analysisError && <div className={styles.error}>{analysisError}</div>}
+
+      {aiMode === 'analyze' && analysis && (
+        <div className={styles.results}>
+          <div className={styles.overviewBox}>
+            <div className={styles.analyzeHeader}>
+              <h4 className={styles.overviewTitle}>📋 Analisi del mazzo</h4>
+              <span className={`${styles.bracketBadge} ${styles[`bracket${analysis.bracket}`]}`}>
+                Bracket {analysis.bracket}
+              </span>
+            </div>
+            <p className={styles.overview}>{analysis.overallAssessment}</p>
+          </div>
+
+          {analysis.winConditions.length > 0 && (
+            <div className={styles.suggestionsSection}>
+              <h4 className={styles.sectionTitle}>🏆 Win Condition ({analysis.winConditions.length})</h4>
+              <ul className={styles.analyzeList}>
+                {analysis.winConditions.map((w, i) => <li key={i}>{w}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {analysis.strengths.length > 0 && (
+            <div className={styles.suggestionsSection}>
+              <h4 className={styles.sectionTitle}>✅ Punti di forza ({analysis.strengths.length})</h4>
+              <ul className={styles.analyzeList}>
+                {analysis.strengths.map((s, i) => <li key={i}>{s}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {analysis.weaknesses.length > 0 && (
+            <div className={styles.suggestionsSection}>
+              <h4 className={styles.sectionTitle}>⚠️ Debolezze ({analysis.weaknesses.length})</h4>
+              <div className={styles.weaknessList}>
+                {analysis.weaknesses.map((w, i) => (
+                  <div key={i} className={`${styles.weaknessCard} ${styles[`severity_${w.severity}`]}`}>
+                    <div className={styles.weaknessHeader}>
+                      <span className={styles.weaknessCategory}>{w.category}</span>
+                      <span className={`${styles.severityBadge} ${styles[`severity_${w.severity}`]}`}>
+                        {w.severity === 'high' ? '🔴 Alta' : w.severity === 'medium' ? '🟡 Media' : '🟢 Bassa'}
+                      </span>
+                    </div>
+                    <p className={styles.weaknessDesc}>{w.description}</p>
+                    {w.suggestions.length > 0 && (
+                      <div className={styles.weaknessSuggestions}>
+                        <span className={styles.suggestLabel}>Considera:</span>
+                        {w.suggestions.map((s, j) => (
+                          <span key={j} className={styles.suggestCard}>{s}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* TRIM MODE */}
       {aiMode === 'trim' && trimming && (

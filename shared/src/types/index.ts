@@ -81,6 +81,32 @@ export interface DeckStats {
   };
   averageCmc: number;
   estimatedPriceEur?: number;
+  functionalStats?: {
+    ramp: number;
+    draw: number;
+    removal: number;
+    boardWipe: number;
+    counter: number;
+    tutor: number;
+    protection: number;
+  };
+}
+
+// ─── Analisi debolezze AI ─────────────────────────────────────────────────
+
+export interface DeckWeakness {
+  category: string;
+  severity: 'low' | 'medium' | 'high';
+  description: string;
+  suggestions: string[];
+}
+
+export interface WeaknessAnalysis {
+  overallAssessment: string;
+  bracket: 1 | 2 | 3 | 4 | 5;
+  weaknesses: DeckWeakness[];
+  strengths: string[];
+  winConditions: string[];
 }
 
 // ─── Validazione ──────────────────────────────────────────────────────────

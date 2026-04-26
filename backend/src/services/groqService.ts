@@ -8,8 +8,8 @@
 
 import Groq from 'groq-sdk';
 import type { Card } from 'shared';
-import type { AISuggestions, TrimSuggestions } from './ollamaService';
-import { buildPrompt, buildTrimPrompt } from './ollamaService';
+import type { AISuggestions, TrimSuggestions, WeaknessAnalysis } from './ollamaService';
+import { buildPrompt, buildTrimPrompt, buildWeaknessPrompt } from './ollamaService';
 import type { EDHRecCard } from './edhrecService';
 
 // Modelli supportati da Groq (free tier)
@@ -138,6 +138,65 @@ export async function getSuggestionsGroq(
     s.isMassLandDenial = !!s.isMassLandDenial;
     return s;
   });
+
+  return parsed;
+}
+
+export async function getWeaknessAnalysisGroq(
+  commander: Card,
+  currentCards: Card[],
+  model?: string
+): Promise<WeaknessAnalysis> {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) throw new Error('GROQ_NOT_CONFIGURED');
+
+  const selectedModel = model ?? DEFAULT_GROQ_MODEL;
+  const prompt = buildWeaknessPrompt(commander, currentCards);
+
+  const client = new Groq({ apiKey });
+  let content: string;
+  try {
+    const completion = await client.chat.completions.create({
+      model: selectedModel,
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert Magic: The Gathering Commander deck analyst. Always respond with valid JSON only, no markdown.',
+        },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.6,
+      max_tokens: 2000,
+    });
+    content = completion.choices[0]?.message?.content ?? '';
+  } catch (err: unknown) {
+    const anyErr = err as { status?: number };
+    if (anyErr.status === 401) throw new Error('GROQ_INVALID_KEY');
+    if (anyErr.status === 429) throw new Error('GROQ_RATE_LIMIT');
+    throw err;
+  }
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('Risposta Groq non contiene JSON valido.');
+
+  let parsed: WeaknessAnalysis;
+  try {
+    parsed = JSON.parse(jsonMatch[0]) as WeaknessAnalysis;
+  } catch {
+    throw new Error('JSON malformato nella risposta Groq.');
+  }
+
+  // Normalizzazione
+  if (!parsed.overallAssessment) parsed.overallAssessment = '';
+  if (!Array.isArray(parsed.weaknesses)) parsed.weaknesses = [];
+  if (!Array.isArray(parsed.strengths)) parsed.strengths = [];
+  if (!Array.isArray(parsed.winConditions)) parsed.winConditions = [];
+  if (!parsed.bracket || parsed.bracket < 1 || parsed.bracket > 5) parsed.bracket = 2;
+  parsed.weaknesses = parsed.weaknesses.map((w) => ({
+    category: w.category || '',
+    severity: (['low', 'medium', 'high'] as const).includes(w.severity) ? w.severity : 'medium',
+    description: w.description || '',
+    suggestions: Array.isArray(w.suggestions) ? w.suggestions : [],
+  }));
 
   return parsed;
 }

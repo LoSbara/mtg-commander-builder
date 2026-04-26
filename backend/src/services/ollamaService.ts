@@ -326,3 +326,115 @@ export async function getDeckSuggestions(
     throw err;
   }
 }
+
+// ─── AI Analisi debolezze mazzo ────────────────────────────────────────────
+
+export interface DeckWeakness {
+  category: string;
+  severity: 'low' | 'medium' | 'high';
+  description: string;
+  suggestions: string[];
+}
+
+export interface WeaknessAnalysis {
+  overallAssessment: string;
+  bracket: 1 | 2 | 3 | 4 | 5;
+  weaknesses: DeckWeakness[];
+  strengths: string[];
+  winConditions: string[];
+}
+
+export function buildWeaknessPrompt(commander: Card, currentCards: Card[]): string {
+  const colorNames: Record<string, string> = { W: 'White', U: 'Blue', B: 'Black', R: 'Red', G: 'Green' };
+  const colorFull = commander.color_identity.length === 0
+    ? 'Colorless'
+    : commander.color_identity.map((c) => colorNames[c] ?? c).join('/');
+
+  const nonCmdr = currentCards.filter((c) => c.name !== commander.name);
+  const cardLines = nonCmdr
+    .map((c) => `- ${c.name} [${c.type_line}]`)
+    .join('\n');
+
+  return `You are an expert Magic: The Gathering Commander deck analyst.
+Analyze the following Commander deck and identify its weaknesses, strengths, and win conditions.
+
+COMMANDER: ${commander.name} (${colorFull})
+Commander text: ${commander.oracle_text}
+
+DECK CARDS (${nonCmdr.length} non-commander cards):
+${cardLines}
+
+Respond with ONLY a JSON object (no markdown, no text outside the JSON):
+{
+  "overallAssessment": "2-3 sentence overview of strategy and power level",
+  "bracket": 2,
+  "weaknesses": [
+    {
+      "category": "e.g. Artifact/Enchantment Removal, Graveyard Hate, Card Draw, Interaction",
+      "severity": "high",
+      "description": "why this is a weakness for this specific deck",
+      "suggestions": ["Card Name 1", "Card Name 2", "Card Name 3"]
+    }
+  ],
+  "strengths": ["specific strength 1", "specific strength 2"],
+  "winConditions": ["win condition 1", "win condition 2"]
+}
+
+RULES:
+- bracket: 1=precon/janky, 2=casual, 3=upgraded, 4=optimized, 5=cEDH
+- Identify 3-6 weaknesses (only real structural gaps, be specific)
+- Identify 2-4 strengths
+- Identify 1-3 win conditions
+- All card names in suggestions MUST match color identity {${commander.color_identity.join('')}}
+- RESPOND ONLY WITH JSON, no markdown fences`;
+}
+
+export async function getDeckWeaknesses(
+  commander: Card,
+  currentCards: Card[],
+  model?: string
+): Promise<WeaknessAnalysis> {
+  const targetModel = model ?? DEFAULT_MODEL;
+  const prompt = buildWeaknessPrompt(commander, currentCards);
+
+  try {
+    const resp = await axios.post<{ response: string }>(
+      `${OLLAMA_BASE}/api/generate`,
+      { model: targetModel, prompt, stream: false },
+      { timeout: 180_000 }
+    );
+
+    const raw = resp.data.response.trim();
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Risposta AI non contiene JSON valido.');
+
+    let parsed: WeaknessAnalysis;
+    try {
+      parsed = JSON.parse(jsonMatch[0]) as WeaknessAnalysis;
+    } catch {
+      throw new Error('JSON malformato nella risposta AI.');
+    }
+
+    // Normalizzazione
+    if (!parsed.overallAssessment) parsed.overallAssessment = '';
+    if (!Array.isArray(parsed.weaknesses)) parsed.weaknesses = [];
+    if (!Array.isArray(parsed.strengths)) parsed.strengths = [];
+    if (!Array.isArray(parsed.winConditions)) parsed.winConditions = [];
+    if (!parsed.bracket || parsed.bracket < 1 || parsed.bracket > 5) parsed.bracket = 2;
+    parsed.weaknesses = parsed.weaknesses.map((w) => ({
+      category: w.category || '',
+      severity: (['low', 'medium', 'high'] as const).includes(w.severity) ? w.severity : 'medium',
+      description: w.description || '',
+      suggestions: Array.isArray(w.suggestions) ? w.suggestions : [],
+    }));
+
+    return parsed;
+  } catch (err) {
+    if (err instanceof AxiosError) {
+      if (err.code === 'ECONNREFUSED') {
+        throw new Error('OLLAMA_NOT_RUNNING: Ollama non è in esecuzione. Avvia Ollama con: ollama serve');
+      }
+    }
+    throw err;
+  }
+}
