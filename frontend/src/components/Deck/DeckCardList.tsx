@@ -30,6 +30,15 @@ export function DeckCardList({
 }: Props) {
   const [tooltip, setTooltip] = useState<{ imgUrl: string; x: number; y: number } | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filtra carte per query di ricerca
+  const filterCard = (row: DeckCardRow) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    const card = cardCache.get(row.card_id);
+    return (card?.name ?? row.card_id).toLowerCase().includes(q);
+  };
 
   if (cards.length === 0) {
     return (
@@ -77,9 +86,20 @@ export function DeckCardList({
           </div>
         </div>
 
+        {/* Ricerca nel mazzo */}
+        <div className={styles.searchRow}>
+          <input
+            className={styles.searchInput}
+            type="search"
+            placeholder="Cerca nel mazzo…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
         {viewMode === 'grid' ? (
           <div className={styles.gridView}>
-            {cards.filter((r) => r.card_id !== commanderId).map((row) => {
+            {cards.filter((r) => r.card_id !== commanderId).filter(filterCard).map((row) => {
               const card = cardCache.get(row.card_id);
               const imgUrl = card?.image_uris?.normal ?? card?.card_faces?.[0]?.image_uris?.normal;
               return (
@@ -116,14 +136,15 @@ export function DeckCardList({
             })}
           </div>
         ) : (
-          <>{Object.entries(groups).map(([groupName, groupCards]) =>
-            groupCards.length > 0 ? (
+          <>{Object.entries(groups).map(([groupName, groupCards]) => {
+            const filtered = groupCards.filter(filterCard);
+            return filtered.length > 0 ? (
             <section key={groupName} className={styles.group}>
               <h4 className={styles.groupTitle}>
-                {groupName} <span className={styles.groupCount}>({groupCards.length})</span>
+                {groupName} <span className={styles.groupCount}>({filtered.length})</span>
               </h4>
               <ul className={styles.list}>
-                {groupCards.map((row) => {
+                {filtered.map((row) => {
                   const card = cardCache.get(row.card_id);
                   const isCmd = row.card_id === commanderId;
                   return (
@@ -165,8 +186,8 @@ export function DeckCardList({
                 })}
               </ul>
             </section>
-          ) : null
-          )}</>
+          ) : null;
+          })}</>
         )}
       </div>
 

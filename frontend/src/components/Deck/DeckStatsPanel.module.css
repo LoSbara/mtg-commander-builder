@@ -167,10 +167,21 @@
 .typeVal  { color: var(--color-text); font-weight: 600; }
 
 /* Prezzo */
+.priceRow {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
 .price {
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   font-weight: 700;
-  color: var(--color-primary);
+  color: #c9a84c;
+}
+.priceUsd {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #4ade80;
 }
 
 /* Categorie funzionali */

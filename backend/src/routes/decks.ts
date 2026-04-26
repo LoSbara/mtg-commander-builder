@@ -17,7 +17,8 @@ import {
   type ExportFormat,
 } from '../services/deckService';
 import { parseDeckList } from '../services/importService';
-import { searchCards } from '../services/scryfallService';
+import { searchCards, getCardById } from '../services/scryfallService';
+import { findCombosForDeck } from '../services/comboService';
 
 const router = Router();
 
@@ -187,6 +188,39 @@ router.get('/:id/validate', async (req, res) => {
   } catch (err: unknown) {
     console.error('Errore validazione mazzo:', err);
     return res.status(500).json({ message: 'Errore durante la validazione.' });
+  }
+});
+
+// GET /api/decks/:id/combos  — ricerca combo Commander Spellbook
+router.get('/:id/combos', async (req, res) => {
+  const db = getDb();
+  const deckRow = db.prepare('SELECT commander_id FROM decks WHERE id = ?').get(req.params.id) as
+    | { commander_id: string } | undefined;
+
+  if (!deckRow) {
+    return res.status(404).json({ message: 'Mazzo non trovato.' });
+  }
+
+  try {
+    const rows = getDeckCardRows(req.params.id);
+    const cardMap = await hydrateCards(rows);
+
+    // Nomi di tutte le carte nel mazzo
+    const cardNames: string[] = [];
+    for (const row of rows) {
+      const card = cardMap.get(row.card_id);
+      if (card) cardNames.push(card.name);
+    }
+
+    // Color identity dal commander
+    const commander = await getCardById(deckRow.commander_id);
+    const colorIdentity = commander.color_identity as string[];
+
+    const combos = await findCombosForDeck(cardNames, colorIdentity);
+    return res.json(combos);
+  } catch (err: unknown) {
+    console.error('Errore ricerca combo:', err);
+    return res.status(500).json({ message: 'Errore nella ricerca dei combo.' });
   }
 });
 

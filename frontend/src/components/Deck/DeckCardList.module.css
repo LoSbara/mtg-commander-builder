@@ -153,6 +153,26 @@
   transition: width 0.3s;
 }
 
+/* Ricerca nel mazzo */
+.searchRow {
+  margin-top: 2px;
+}
+
+.searchInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5px 10px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  color: var(--color-text);
+  font-size: 0.78rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.searchInput:focus { border-color: rgba(255,255,255,0.25); }
+.searchInput::placeholder { color: var(--color-muted); }
+
 .group { display: flex; flex-direction: column; gap: 4px; }
 
 .groupTitle {

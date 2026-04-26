@@ -1,0 +1,145 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 0 8px;
+  flex-shrink: 0;
+}
+
+.tabBtn {
+  flex: 1;
+  padding: 6px 8px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.tabBtn:hover { background: rgba(255,255,255,0.08); color: var(--color-text); }
+.tabActive {
+  background: rgba(124, 58, 237, 0.15);
+  border-color: rgba(124, 58, 237, 0.4);
+  color: #c4b5fd;
+}
+
+.list {
+  list-style: none;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.item {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.itemHeader {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s;
+}
+.itemHeader:hover { background: rgba(255,255,255,0.05); }
+
+.produces {
+  flex: 1;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.cardCount {
+  font-size: 0.7rem;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.chevron {
+  font-size: 0.6rem;
+  color: var(--color-muted);
+}
+
+.detail {
+  padding: 0 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cardList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.cardChip {
+  background: rgba(124, 58, 237, 0.15);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  color: #c4b5fd;
+}
+
+.description {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.steps {
+  font-size: 0.73rem;
+  color: var(--color-muted);
+}
+.steps summary { cursor: pointer; color: var(--color-text); margin-bottom: 4px; }
+.steps pre {
+  white-space: pre-wrap;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--color-muted);
+  font-family: inherit;
+  margin: 0;
+}
+
+.link {
+  font-size: 0.72rem;
+  color: #7c9eff;
+  text-decoration: none;
+  align-self: flex-start;
+}
+.link:hover { text-decoration: underline; }
+
+.msg {
+  font-size: 0.82rem;
+  color: var(--color-muted);
+  padding: 16px 0;
+  text-align: center;
+}
+
+.empty {
+  font-size: 0.82rem;
+  color: var(--color-muted);
+  padding: 12px 0;
+  text-align: center;
+}

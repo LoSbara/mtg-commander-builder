@@ -178,3 +178,26 @@ export const unshareDeck = (deckId: string) =>
 
 export const getPublicDeck = (token: string) =>
   http.get<Deck>(`/decks/public/${token}`);
+
+// ─── Combo detection (Commander Spellbook) ───────────────────────────────
+
+export interface SpellbookCard { card: { name: string; oracleId: string } }
+export interface SpellbookFeature { feature: { name: string; description: string } }
+export interface SpellbookCombo {
+  id: number | string;
+  uses: SpellbookCard[];
+  requires: SpellbookFeature[];
+  produces: SpellbookFeature[];
+  description?: string;
+  steps?: string;
+  colorIdentity: string[];
+  popularity?: number;
+}
+
+export interface FindCombosResult {
+  results: SpellbookCombo[];
+  potential: SpellbookCombo[];
+}
+
+export const getDeckCombos = (deckId: string) =>
+  http.get<FindCombosResult>(`/decks/${deckId}/combos`);

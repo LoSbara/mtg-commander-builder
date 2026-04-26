@@ -99,10 +99,17 @@ export function DeckStatsPanel({ stats, loading, validation }: Props) {
         </ul>
       </section>
 
-      {stats.estimatedPriceEur != null && (
+      {(stats.estimatedPriceEur != null || stats.estimatedPriceUsd != null) && (
         <section className={styles.section}>
           <h4 className={styles.sectionTitle}>Prezzo stimato</h4>
-          <p className={styles.price}>€ {stats.estimatedPriceEur.toFixed(2)}</p>
+          <div className={styles.priceRow}>
+            {stats.estimatedPriceEur != null && (
+              <span className={styles.price}>€ {stats.estimatedPriceEur.toFixed(2)}</span>
+            )}
+            {stats.estimatedPriceUsd != null && (
+              <span className={styles.priceUsd}>$ {stats.estimatedPriceUsd.toFixed(2)}</span>
+            )}
+          </div>
         </section>
       )}
 

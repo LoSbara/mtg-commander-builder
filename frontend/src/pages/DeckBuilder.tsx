@@ -5,6 +5,7 @@ import { CardSearch } from '../components/Search/CardSearch';
 import { CommanderSearch } from '../components/Search/CommanderSearch';
 import { DeckCardList } from '../components/Deck/DeckCardList';
 import { DeckStatsPanel } from '../components/Deck/DeckStatsPanel';
+import { ComboPanel } from '../components/Deck/ComboPanel';
 import { AIAssistant } from '../components/AI/AIAssistant';
 import { AIReplacePanel } from '../components/AI/AIReplacePanel';
 import { ImportModal } from '../components/Import/ImportModal';
@@ -46,6 +47,35 @@ export default function DeckBuilder() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showHandSimulator, setShowHandSimulator] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  // Print proxy
+  function handlePrintProxy() {
+    if (!currentDeck) return;
+    const rows = currentDeck.cards.filter((r) => r.is_commander !== 1);
+    const imgUrls: string[] = [];
+    for (const row of rows) {
+      const card = cardCache.get(row.card_id);
+      const url = card?.image_uris?.normal ?? card?.card_faces?.[0]?.image_uris?.normal;
+      if (url) {
+        for (let i = 0; i < row.quantity; i++) imgUrls.push(url);
+      }
+    }
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Proxy — ${currentDeck.name}</title>
+<style>
+  @page { margin: 8mm; }
+  body { margin: 0; background: #fff; font-family: sans-serif; }
+  h2 { font-size: 13px; text-align: center; margin: 4px 0 10px; color: #333; }
+  .grid { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-start; }
+  .card { width: 63mm; height: 88mm; object-fit: cover; border-radius: 3mm; border: 1px solid #bbb; display: block; }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style></head><body>
+<h2>${currentDeck.name} — ${imgUrls.length} carte</h2>
+<div class="grid">${imgUrls.map(u => `<img class="card" src="${u}" loading="eager">`).join('')}</div>
+<script>window.onload=function(){setTimeout(function(){window.print();},600);}</script>
+</body></html>`;
+    const win = window.open('', '_blank');
+    if (win) { win.document.write(html); win.document.close(); }
+  }
 
   // AI Replace
   const [replaceCardId, setReplaceCardId] = useState<string | null>(null);
@@ -317,6 +347,14 @@ export default function DeckBuilder() {
             📥 Importa
           </button>
           <button
+            className={styles.btnProxy}
+            onClick={handlePrintProxy}
+            disabled={!currentDeck || (currentDeck.cards ?? []).length === 0}
+            title="Stampa proxy (apre finestra di stampa)"
+          >
+            🖨 Proxy
+          </button>
+          <button
             className={styles.btnShare}
             onClick={handleShareToggle}
             disabled={!currentDeck || sharing}
@@ -448,6 +486,12 @@ export default function DeckBuilder() {
         <aside className={styles.statsPanel}>
           <h2 className={styles.panelTitle}>Statistiche</h2>
           <DeckStatsPanel stats={stats} loading={statsLoading} validation={validation} />
+          {currentDeck && (
+            <>
+              <h2 className={styles.panelTitle} style={{ marginTop: '16px' }}>Combo</h2>
+              <ComboPanel deckId={currentDeck.id} />
+            </>
+          )}
         </aside>
       </div>
 

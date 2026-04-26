@@ -84,6 +84,7 @@ export interface DeckStats {
   };
   averageCmc: number;
   estimatedPriceEur?: number;
+  estimatedPriceUsd?: number;
   functionalStats?: {
     ramp: number;
     draw: number;

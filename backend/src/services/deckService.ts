@@ -204,7 +204,9 @@ export async function computeDeckStats(deckId: string): Promise<DeckStats> {
   let totalCmc = 0;
   let nonLandCount = 0;
   let estimatedPriceEur = 0;
-  let hasPrices = false;
+  let estimatedPriceUsd = 0;
+  let hasPriceEur = false;
+  let hasPriceUsd = false;
 
   for (const row of rows) {
     const card = cardMap.get(row.card_id);
@@ -239,16 +241,22 @@ export async function computeDeckStats(deckId: string): Promise<DeckStats> {
       stats.colorDistribution[color] += qty;
     }
 
-    // Prezzo stimato EUR
-    const price = card.prices?.eur;
-    if (price) {
-      estimatedPriceEur += parseFloat(price) * qty;
-      hasPrices = true;
+    // Prezzo stimato EUR + USD
+    const priceEur = card.prices?.eur;
+    if (priceEur) {
+      estimatedPriceEur += parseFloat(priceEur) * qty;
+      hasPriceEur = true;
+    }
+    const priceUsd = card.prices?.usd;
+    if (priceUsd) {
+      estimatedPriceUsd += parseFloat(priceUsd) * qty;
+      hasPriceUsd = true;
     }
   }
 
   stats.averageCmc = nonLandCount > 0 ? Math.round((totalCmc / nonLandCount) * 100) / 100 : 0;
-  if (hasPrices) stats.estimatedPriceEur = Math.round(estimatedPriceEur * 100) / 100;
+  if (hasPriceEur) stats.estimatedPriceEur = Math.round(estimatedPriceEur * 100) / 100;
+  if (hasPriceUsd) stats.estimatedPriceUsd = Math.round(estimatedPriceUsd * 100) / 100;
 
   // Statistiche funzionali
   const functional = { ramp: 0, draw: 0, removal: 0, boardWipe: 0, counter: 0, tutor: 0, protection: 0 };

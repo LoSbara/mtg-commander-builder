@@ -159,6 +159,20 @@
   cursor: default;
 }
 
+.btnProxy {
+  padding: 5px 14px;
+  background: rgba(120, 200, 120, 0.12);
+  border: 1px solid rgba(120, 200, 120, 0.3);
+  border-radius: 6px;
+  color: #90d090;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.btnProxy:hover:not(:disabled) { background: rgba(120, 200, 120, 0.22); }
+.btnProxy:disabled { opacity: 0.5; cursor: default; }
+
 .btnShare {
   padding: 5px 14px;
   background: rgba(180, 120, 220, 0.12);

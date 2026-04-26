@@ -108,7 +108,7 @@ MTG-deck-creater/
 - [x] Il mazzo deve avere esattamente **100 carte** (commander incluso)
 - [x] **Nessun duplicato** (tranne le terre base)
 - [x] Tutte le carte devono rispettare la **color identity** del Commander
-- [ ] Validazione legalità Commander (ban list ufficiale) — *da implementare*
+- [x] Validazione legalità Commander (ban list ufficiale) — usa `card.legalities['commander'] === 'banned'` da Scryfall
 
 ---
 
@@ -197,10 +197,10 @@ MTG-deck-creater/
 | Commander art + color identity in DeckList | ✅ Completato |
 | Grid view nella lista mazzo | ✅ Completato |
 | DeckBuilder responsive (mobile) | ✅ Completato |
-| Prezzi mazzo (Scryfall USD/EUR) | ⬜ Da fare |
-| Commander Spellbook (combo detection) | ⬜ Da fare |
-| Ricerca nel mazzo (trova carta) | ⬜ Da fare |
-| Stampa proxy (HTML stampabile) | ⬜ Da fare |
+| Prezzi mazzo (Scryfall USD/EUR) | ✅ Completato |
+| Commander Spellbook (combo detection) | ✅ Completato |
+| Ricerca nel mazzo (trova carta) | ✅ Completato |
+| Stampa proxy (HTML stampabile) | ✅ Completato |
 
 ---
 
@@ -249,4 +249,4 @@ OLLAMA_MODEL=llama3.2                   # opzionale
 
 ---
 
-*Ultimo aggiornamento: 2026-04-26 — Integrazione EDHREC (synergy + salt score) nel prompt AI; categorie multiple per suggerimento AI (`categories: string[]`); importazione mazzo da file (MTGO/Arena/Moxfield); AI Trim per mazzi >100 carte; AI dual-mode Groq/Ollama; mana-font icons. TypeScript 0 errori, pushato su GitHub.*
+*Ultimo aggiornamento: 2026-05-08 — Completate tutte le feature roadmap: prezzi USD+EUR (Scryfall), ricerca nel mazzo (DeckCardList filter), stampa proxy (print window con immagini carte), combo detection Commander Spellbook (backend service + route + ComboPanel frontend con tab "Nel mazzo"/"Potenziali"). TypeScript 0 errori.*
