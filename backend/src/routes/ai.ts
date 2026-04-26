@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getDb } from '../models/db';
+import { getPgPool } from '../models/pgDb';
 import { getCardById } from '../services/scryfallService';
 import { getDeckCardRows, hydrateCards } from '../services/deckService';
 import {
@@ -26,10 +26,11 @@ router.get('/status', async (_req, res) => {
 
 // POST /api/ai/decks/:id/suggest  — genera suggerimenti AI per il mazzo
 router.post('/decks/:id/suggest', async (req, res) => {
-  const db = getDb();
-  const deck = db
-    .prepare('SELECT id, name, commander_id FROM decks WHERE id = ?')
-    .get(req.params.id) as { id: string; name: string; commander_id: string } | undefined;
+  const pool = getPgPool();
+  const deckRes = await pool.query<{ id: string; name: string; commander_id: string }>(
+    'SELECT id, name, commander_id FROM decks WHERE id = $1', [req.params.id]
+  );
+  const deck = deckRes.rows[0];
 
   if (!deck) {
     return res.status(404).json({ message: 'Mazzo non trovato.' });
@@ -52,7 +53,7 @@ router.post('/decks/:id/suggest', async (req, res) => {
   try {
     // Carica commander e carte attuali del mazzo
     const commander = await getCardById(deck.commander_id);
-    const rows = getDeckCardRows(deck.id);
+    const rows = await getDeckCardRows(deck.id);
     const cardMap = await hydrateCards(rows);
     const currentCards = Array.from(cardMap.values());
 
@@ -112,10 +113,11 @@ router.post('/decks/:id/suggest', async (req, res) => {
 
 // POST /api/ai/decks/:id/trim  — AI suggerisce quali carte tagliare (mazzo >100)
 router.post('/decks/:id/trim', async (req, res) => {
-  const db = getDb();
-  const deck = db
-    .prepare('SELECT id, name, commander_id FROM decks WHERE id = ?')
-    .get(req.params.id) as { id: string; name: string; commander_id: string } | undefined;
+  const pool = getPgPool();
+  const deckRes = await pool.query<{ id: string; name: string; commander_id: string }>(
+    'SELECT id, name, commander_id FROM decks WHERE id = $1', [req.params.id]
+  );
+  const deck = deckRes.rows[0];
 
   if (!deck) {
     return res.status(404).json({ message: 'Mazzo non trovato.' });
@@ -132,7 +134,7 @@ router.post('/decks/:id/trim', async (req, res) => {
   try {
     const { model } = req.body as { model?: string };
     const commander = await getCardById(deck.commander_id);
-    const rows = getDeckCardRows(deck.id);
+    const rows = await getDeckCardRows(deck.id);
     const cardMap = await hydrateCards(rows);
 
     const totalCards = rows.reduce((s, r) => s + r.quantity, 0);
@@ -169,10 +171,11 @@ router.post('/decks/:id/trim', async (req, res) => {
 
 // POST /api/ai/decks/:id/analyze  — analisi debolezze/punti di forza del mazzo
 router.post('/decks/:id/analyze', async (req, res) => {
-  const db = getDb();
-  const deck = db
-    .prepare('SELECT id, name, commander_id FROM decks WHERE id = ?')
-    .get(req.params.id) as { id: string; name: string; commander_id: string } | undefined;
+  const pool = getPgPool();
+  const deckRes = await pool.query<{ id: string; name: string; commander_id: string }>(
+    'SELECT id, name, commander_id FROM decks WHERE id = $1', [req.params.id]
+  );
+  const deck = deckRes.rows[0];
 
   if (!deck) return res.status(404).json({ message: 'Mazzo non trovato.' });
 
@@ -188,7 +191,7 @@ router.post('/decks/:id/analyze', async (req, res) => {
 
   try {
     const commander = await getCardById(deck.commander_id);
-    const rows = getDeckCardRows(deck.id);
+    const rows = await getDeckCardRows(deck.id);
     const cardMap = await hydrateCards(rows);
     const currentCards = Array.from(cardMap.values());
 
@@ -206,10 +209,11 @@ router.post('/decks/:id/analyze', async (req, res) => {
 
 // POST /api/ai/decks/:id/replace  — suggerisci sostituzione per una carta specifica
 router.post('/decks/:id/replace', async (req, res) => {
-  const db = getDb();
-  const deck = db
-    .prepare('SELECT id, name, commander_id FROM decks WHERE id = ?')
-    .get(req.params.id) as { id: string; name: string; commander_id: string } | undefined;
+  const pool = getPgPool();
+  const deckRes = await pool.query<{ id: string; name: string; commander_id: string }>(
+    'SELECT id, name, commander_id FROM decks WHERE id = $1', [req.params.id]
+  );
+  const deck = deckRes.rows[0];
 
   if (!deck) return res.status(404).json({ message: 'Mazzo non trovato.' });
 
@@ -226,7 +230,7 @@ router.post('/decks/:id/replace', async (req, res) => {
 
   try {
     const commander = await getCardById(deck.commander_id);
-    const rows = getDeckCardRows(deck.id);
+    const rows = await getDeckCardRows(deck.id);
     const cardMap = await hydrateCards(rows);
     const cardToReplace = cardMap.get(card_id) ?? await getCardById(card_id);
     const currentCards = Array.from(cardMap.values());

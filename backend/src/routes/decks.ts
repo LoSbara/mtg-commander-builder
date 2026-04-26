@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { randomUUID } from 'crypto';
-import { getDb } from '../models/db';
+import { getPgPool } from '../models/pgDb';
 import type { Deck } from 'shared';
 import {
   addCardToDeck,
@@ -23,93 +23,97 @@ import { findCombosForDeck } from '../services/comboService';
 const router = Router();
 
 // GET /api/decks/public/:token  — vista pubblica di un mazzo condiviso
-router.get('/public/:token', (req, res) => {
-  const db = getDb();
-  const deck = db
-    .prepare('SELECT * FROM decks WHERE share_token = ?')
-    .get(req.params.token) as Record<string, unknown> | undefined;
+router.get('/public/:token', async (req, res) => {
+  const pool = getPgPool();
+  const deckRes = await pool.query('SELECT * FROM decks WHERE share_token = $1', [req.params.token]);
+  const deck = deckRes.rows[0] as Record<string, unknown> | undefined;
 
   if (!deck) {
     return res.status(404).json({ message: 'Mazzo non trovato o link non valido.' });
   }
 
-  const cards = getDeckCardRows(deck.id as string);
-  const maybeboard = getMaybeboardRows(deck.id as string);
+  const cards = await getDeckCardRows(deck.id as string);
+  const maybeboard = await getMaybeboardRows(deck.id as string);
   return res.json({ ...deck, cards, maybeboard });
 });
 
 // GET /api/decks
-router.get('/', (_req, res) => {
-  const db = getDb();
-  const decks = db.prepare('SELECT * FROM decks ORDER BY updated_at DESC').all() as Record<string, unknown>[];
-  const result = decks.map((deck) => ({
-    ...deck,
-    cards: getDeckCardRows(deck.id as string),
-  }));
+router.get('/', async (_req, res) => {
+  const pool = getPgPool();
+  const decksRes = await pool.query('SELECT * FROM decks ORDER BY updated_at DESC');
+  const result = await Promise.all(
+    decksRes.rows.map(async (deck: Record<string, unknown>) => ({
+      ...deck,
+      cards: await getDeckCardRows(deck.id as string),
+    }))
+  );
   return res.json(result);
 });
 
 // GET /api/decks/:id
-router.get('/:id', (req, res) => {
-  const db = getDb();
-  const deck = db.prepare('SELECT * FROM decks WHERE id = ?').get(req.params.id);
+router.get('/:id', async (req, res) => {
+  const pool = getPgPool();
+  const deckRes = await pool.query('SELECT * FROM decks WHERE id = $1', [req.params.id]);
+  const deck = deckRes.rows[0];
 
   if (!deck) {
     return res.status(404).json({ message: 'Mazzo non trovato.' });
   }
 
-  const cards = getDeckCardRows(req.params.id);
-  const maybeboard = getMaybeboardRows(req.params.id);
+  const cards = await getDeckCardRows(req.params.id);
+  const maybeboard = await getMaybeboardRows(req.params.id);
   return res.json({ ...deck, cards, maybeboard });
 });
 
 // POST /api/decks
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const { name, description, commander_id } = req.body as Partial<Deck & { commander_id: string }>;
 
   if (!name || !commander_id) {
     return res.status(400).json({ message: 'name e commander_id sono obbligatori.' });
   }
 
-  const db = getDb();
+  const pool = getPgPool();
   const id = randomUUID();
   const now = new Date().toISOString();
 
-  db.prepare(
-    'INSERT INTO decks (id, name, description, commander_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)'
-  ).run(id, name, description ?? null, commander_id, now, now);
+  await pool.query(
+    'INSERT INTO decks (id, name, description, commander_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)',
+    [id, name, description ?? null, commander_id, now, now]
+  );
 
   // Aggiunge automaticamente il commander come prima carta del mazzo
-  addCardToDeck(id, commander_id, 1, true);
+  await addCardToDeck(id, commander_id, 1, true);
 
   return res.status(201).json({ id, name, description, commander_id, created_at: now, updated_at: now });
 });
 
 // PUT /api/decks/:id
-router.put('/:id', (req, res) => {
-  const db = getDb();
-  const existing = db.prepare('SELECT id FROM decks WHERE id = ?').get(req.params.id);
+router.put('/:id', async (req, res) => {
+  const pool = getPgPool();
+  const existing = await pool.query('SELECT id FROM decks WHERE id = $1', [req.params.id]);
 
-  if (!existing) {
+  if (existing.rows.length === 0) {
     return res.status(404).json({ message: 'Mazzo non trovato.' });
   }
 
   const { name, description } = req.body as Partial<Deck>;
   const now = new Date().toISOString();
 
-  db.prepare(
-    'UPDATE decks SET name = COALESCE(?, name), description = COALESCE(?, description), updated_at = ? WHERE id = ?'
-  ).run(name ?? null, description ?? null, now, req.params.id);
+  await pool.query(
+    'UPDATE decks SET name = COALESCE($1, name), description = COALESCE($2, description), updated_at = $3 WHERE id = $4',
+    [name ?? null, description ?? null, now, req.params.id]
+  );
 
   return res.json({ id: req.params.id, updated_at: now });
 });
 
 // DELETE /api/decks/:id
-router.delete('/:id', (req, res) => {
-  const db = getDb();
-  const result = db.prepare('DELETE FROM decks WHERE id = ?').run(req.params.id);
+router.delete('/:id', async (req, res) => {
+  const pool = getPgPool();
+  const res2 = await pool.query('DELETE FROM decks WHERE id = $1', [req.params.id]);
 
-  if (result.changes === 0) {
+  if ((res2.rowCount ?? 0) === 0) {
     return res.status(404).json({ message: 'Mazzo non trovato.' });
   }
 
@@ -119,11 +123,11 @@ router.delete('/:id', (req, res) => {
 // ─── Gestione carte nel mazzo ──────────────────────────────────────────────
 
 // POST /api/decks/:id/cards  — aggiunge una carta
-router.post('/:id/cards', (req, res) => {
-  const db = getDb();
-  const deck = db.prepare('SELECT id FROM decks WHERE id = ?').get(req.params.id);
+router.post('/:id/cards', async (req, res) => {
+  const pool = getPgPool();
+  const deck = await pool.query('SELECT id FROM decks WHERE id = $1', [req.params.id]);
 
-  if (!deck) {
+  if (deck.rows.length === 0) {
     return res.status(404).json({ message: 'Mazzo non trovato.' });
   }
 
@@ -140,13 +144,13 @@ router.post('/:id/cards', (req, res) => {
     return res.status(400).json({ message: 'quantity deve essere un intero >= 1.' });
   }
 
-  addCardToDeck(req.params.id, card_id, quantity, is_commander);
+  await addCardToDeck(req.params.id, card_id, quantity, is_commander);
   return res.status(201).json({ deck_id: req.params.id, card_id, quantity, is_commander });
 });
 
 // DELETE /api/decks/:id/cards/:cardId  — rimuove una carta
-router.delete('/:id/cards/:cardId', (req, res) => {
-  const removed = removeCardFromDeck(req.params.id, req.params.cardId);
+router.delete('/:id/cards/:cardId', async (req, res) => {
+  const removed = await removeCardFromDeck(req.params.id, req.params.cardId);
 
   if (!removed) {
     return res.status(404).json({ message: 'Carta non trovata nel mazzo.' });
@@ -157,10 +161,10 @@ router.delete('/:id/cards/:cardId', (req, res) => {
 
 // GET /api/decks/:id/stats  — statistiche mazzo
 router.get('/:id/stats', async (req, res) => {
-  const db = getDb();
-  const deck = db.prepare('SELECT id FROM decks WHERE id = ?').get(req.params.id);
+  const pool = getPgPool();
+  const deck = await pool.query('SELECT id FROM decks WHERE id = $1', [req.params.id]);
 
-  if (!deck) {
+  if (deck.rows.length === 0) {
     return res.status(404).json({ message: 'Mazzo non trovato.' });
   }
 
@@ -175,10 +179,10 @@ router.get('/:id/stats', async (req, res) => {
 
 // GET /api/decks/:id/validate  — validazione Commander
 router.get('/:id/validate', async (req, res) => {
-  const db = getDb();
-  const deck = db.prepare('SELECT id FROM decks WHERE id = ?').get(req.params.id);
+  const pool = getPgPool();
+  const deck = await pool.query('SELECT id FROM decks WHERE id = $1', [req.params.id]);
 
-  if (!deck) {
+  if (deck.rows.length === 0) {
     return res.status(404).json({ message: 'Mazzo non trovato.' });
   }
 
@@ -193,16 +197,19 @@ router.get('/:id/validate', async (req, res) => {
 
 // GET /api/decks/:id/combos  — ricerca combo Commander Spellbook
 router.get('/:id/combos', async (req, res) => {
-  const db = getDb();
-  const deckRow = db.prepare('SELECT commander_id FROM decks WHERE id = ?').get(req.params.id) as
-    | { commander_id: string } | undefined;
+  const pool = getPgPool();
+  const deckRes = await pool.query<{ commander_id: string }>(
+    'SELECT commander_id FROM decks WHERE id = $1',
+    [req.params.id]
+  );
+  const deckRow = deckRes.rows[0];
 
   if (!deckRow) {
     return res.status(404).json({ message: 'Mazzo non trovato.' });
   }
 
   try {
-    const rows = getDeckCardRows(req.params.id);
+    const rows = await getDeckCardRows(req.params.id);
     const cardMap = await hydrateCards(rows);
 
     // Nomi di tutte le carte nel mazzo
@@ -226,10 +233,12 @@ router.get('/:id/combos', async (req, res) => {
 
 // POST /api/decks/:id/import  — importa carte da testo (MTGO/Arena/Moxfield/plain)
 router.post('/:id/import', async (req, res) => {
-  const db = getDb();
-  const deck = db
-    .prepare('SELECT id, commander_id FROM decks WHERE id = ?')
-    .get(req.params.id) as { id: string; commander_id: string } | undefined;
+  const pool = getPgPool();
+  const deckRes = await pool.query<{ id: string; commander_id: string }>(
+    'SELECT id, commander_id FROM decks WHERE id = $1',
+    [req.params.id]
+  );
+  const deck = deckRes.rows[0];
 
   if (!deck) {
     return res.status(404).json({ message: 'Mazzo non trovato.' });
@@ -245,7 +254,7 @@ router.post('/:id/import', async (req, res) => {
     return res.status(400).json({ message: 'Nessuna carta riconosciuta nel testo.' });
   }
 
-  const existingRows = getDeckCardRows(deck.id);
+  const existingRows = await getDeckCardRows(deck.id);
   const existingIds = new Set(existingRows.map((r) => r.card_id));
 
   const imported: { name: string; id: string }[] = [];
@@ -274,7 +283,7 @@ router.post('/:id/import', async (req, res) => {
         continue;
       }
 
-      addCardToDeck(deck.id, card.id, entry.quantity, false);
+      await addCardToDeck(deck.id, card.id, entry.quantity, false);
       existingIds.add(card.id);
       imported.push({ name: card.name, id: card.id });
     } catch {
@@ -294,36 +303,36 @@ router.post('/:id/import', async (req, res) => {
 // ─── Maybeboard ──────────────────────────────────────────────────────────
 
 // GET /api/decks/:id/maybeboard
-router.get('/:id/maybeboard', (req, res) => {
-  const db = getDb();
-  const deck = db.prepare('SELECT id FROM decks WHERE id = ?').get(req.params.id);
-  if (!deck) return res.status(404).json({ message: 'Mazzo non trovato.' });
-  return res.json(getMaybeboardRows(req.params.id));
+router.get('/:id/maybeboard', async (req, res) => {
+  const pool = getPgPool();
+  const deck = await pool.query('SELECT id FROM decks WHERE id = $1', [req.params.id]);
+  if (deck.rows.length === 0) return res.status(404).json({ message: 'Mazzo non trovato.' });
+  return res.json(await getMaybeboardRows(req.params.id));
 });
 
 // POST /api/decks/:id/maybeboard  — aggiunge carta al maybeboard
-router.post('/:id/maybeboard', (req, res) => {
-  const db = getDb();
-  const deck = db.prepare('SELECT id FROM decks WHERE id = ?').get(req.params.id);
-  if (!deck) return res.status(404).json({ message: 'Mazzo non trovato.' });
+router.post('/:id/maybeboard', async (req, res) => {
+  const pool = getPgPool();
+  const deck = await pool.query('SELECT id FROM decks WHERE id = $1', [req.params.id]);
+  if (deck.rows.length === 0) return res.status(404).json({ message: 'Mazzo non trovato.' });
 
   const { card_id, quantity = 1 } = req.body as { card_id?: string; quantity?: number };
   if (!card_id) return res.status(400).json({ message: 'card_id è obbligatorio.' });
 
-  addToMaybeboard(req.params.id, card_id, quantity);
+  await addToMaybeboard(req.params.id, card_id, quantity);
   return res.status(201).json({ deck_id: req.params.id, card_id, quantity, is_maybeboard: 1 });
 });
 
 // DELETE /api/decks/:id/maybeboard/:cardId  — rimuove dal maybeboard
-router.delete('/:id/maybeboard/:cardId', (req, res) => {
-  const removed = removeFromMaybeboard(req.params.id, req.params.cardId);
+router.delete('/:id/maybeboard/:cardId', async (req, res) => {
+  const removed = await removeFromMaybeboard(req.params.id, req.params.cardId);
   if (!removed) return res.status(404).json({ message: 'Carta non trovata nel maybeboard.' });
   return res.status(204).send();
 });
 
 // POST /api/decks/:id/maybeboard/:cardId/move  — sposta dal maybeboard al mazzo principale
-router.post('/:id/maybeboard/:cardId/move', (req, res) => {
-  const moved = moveMaybeboardToMain(req.params.id, req.params.cardId);
+router.post('/:id/maybeboard/:cardId/move', async (req, res) => {
+  const moved = await moveMaybeboardToMain(req.params.id, req.params.cardId);
   if (!moved) return res.status(404).json({ message: 'Carta non trovata nel maybeboard.' });
   return res.json({ deck_id: req.params.id, card_id: req.params.cardId, moved: true });
 });
@@ -331,37 +340,41 @@ router.post('/:id/maybeboard/:cardId/move', (req, res) => {
 // ─── Condivisione mazzo ────────────────────────────────────────────────────
 
 // POST /api/decks/:id/share  — genera un token di condivisione pubblico
-router.post('/:id/share', (req, res) => {
-  const db = getDb();
-  const deck = db.prepare('SELECT id, share_token FROM decks WHERE id = ?').get(req.params.id) as
-    | { id: string; share_token: string | null }
-    | undefined;
+router.post('/:id/share', async (req, res) => {
+  const pool = getPgPool();
+  const deckRes = await pool.query<{ id: string; share_token: string | null }>(
+    'SELECT id, share_token FROM decks WHERE id = $1',
+    [req.params.id]
+  );
+  const deck = deckRes.rows[0];
 
   if (!deck) return res.status(404).json({ message: 'Mazzo non trovato.' });
 
   const token = deck.share_token ?? randomUUID();
-  db.prepare('UPDATE decks SET share_token = ? WHERE id = ?').run(token, deck.id);
+  await pool.query('UPDATE decks SET share_token = $1 WHERE id = $2', [token, deck.id]);
 
   const origin = (req.headers.origin as string) ?? `http://localhost:5173`;
   return res.json({ share_token: token, shareUrl: `${origin}/share/${token}` });
 });
 
 // DELETE /api/decks/:id/share  — rimuove il link di condivisione
-router.delete('/:id/share', (req, res) => {
-  const db = getDb();
-  const existing = db.prepare('SELECT id FROM decks WHERE id = ?').get(req.params.id);
-  if (!existing) return res.status(404).json({ message: 'Mazzo non trovato.' });
+router.delete('/:id/share', async (req, res) => {
+  const pool = getPgPool();
+  const existing = await pool.query('SELECT id FROM decks WHERE id = $1', [req.params.id]);
+  if (existing.rows.length === 0) return res.status(404).json({ message: 'Mazzo non trovato.' });
 
-  db.prepare('UPDATE decks SET share_token = NULL WHERE id = ?').run(req.params.id);
+  await pool.query('UPDATE decks SET share_token = NULL WHERE id = $1', [req.params.id]);
   return res.status(204).send();
 });
 
 // GET /api/decks/:id/export?format=txt|mtgo|moxfield
 router.get('/:id/export', async (req, res) => {
-  const db = getDb();
-  const deck = db
-    .prepare('SELECT id, name, commander_id FROM decks WHERE id = ?')
-    .get(req.params.id) as { id: string; name: string; commander_id: string } | undefined;
+  const pool = getPgPool();
+  const deckRes = await pool.query<{ id: string; name: string; commander_id: string }>(
+    'SELECT id, name, commander_id FROM decks WHERE id = $1',
+    [req.params.id]
+  );
+  const deck = deckRes.rows[0];
 
   if (!deck) {
     return res.status(404).json({ message: 'Mazzo non trovato.' });
@@ -373,7 +386,7 @@ router.get('/:id/export', async (req, res) => {
   }
 
   try {
-    const rows = getDeckCardRows(req.params.id);
+    const rows = await getDeckCardRows(req.params.id);
     const cardMap = await hydrateCards(rows);
     const text = formatDeckExport(deck.name, deck.commander_id, rows, cardMap, format as ExportFormat);
     const safeFilename = deck.name.replace(/[^a-z0-9\-_\s]/gi, '').replace(/\s+/g, '_').toLowerCase();

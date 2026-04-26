@@ -1,5 +1,5 @@
 import type { Card, ManaColor, DeckStats } from 'shared';
-import { getDb } from '../models/db';
+import { getPgPool } from '../models/pgDb';
 import { getCardById } from './scryfallService';
 
 // ─── Tipi interni ──────────────────────────────────────────────────────────
@@ -25,60 +25,67 @@ function isBasicLand(card: Card): boolean {
 
 // ─── Lettura carte dal DB ──────────────────────────────────────────────────
 
-export function getDeckCardRows(deckId: string): DeckCardRow[] {
-  const db = getDb();
-  // Esclude carte del maybeboard dalla lista principale
-  return db
-    .prepare('SELECT * FROM deck_cards WHERE deck_id = ? AND (is_maybeboard IS NULL OR is_maybeboard = 0)')
-    .all(deckId) as DeckCardRow[];
+export async function getDeckCardRows(deckId: string): Promise<DeckCardRow[]> {
+  const res = await getPgPool().query<DeckCardRow>(
+    'SELECT deck_id, card_id, quantity, is_commander, is_maybeboard FROM deck_cards WHERE deck_id = $1 AND (is_maybeboard IS NULL OR is_maybeboard = 0)',
+    [deckId]
+  );
+  return res.rows;
 }
 
-export function getMaybeboardRows(deckId: string): DeckCardRow[] {
-  const db = getDb();
-  return db
-    .prepare('SELECT * FROM deck_cards WHERE deck_id = ? AND is_maybeboard = 1')
-    .all(deckId) as DeckCardRow[];
+export async function getMaybeboardRows(deckId: string): Promise<DeckCardRow[]> {
+  const res = await getPgPool().query<DeckCardRow>(
+    'SELECT deck_id, card_id, quantity, is_commander, is_maybeboard FROM deck_cards WHERE deck_id = $1 AND is_maybeboard = 1',
+    [deckId]
+  );
+  return res.rows;
 }
 
-export function addToMaybeboard(deckId: string, cardId: string, quantity: number): void {
-  const db = getDb();
-  const existing = db
-    .prepare('SELECT quantity, is_maybeboard FROM deck_cards WHERE deck_id = ? AND card_id = ?')
-    .get(deckId, cardId) as { quantity: number; is_maybeboard: number } | undefined;
+export async function addToMaybeboard(deckId: string, cardId: string, quantity: number): Promise<void> {
+  const pool = getPgPool();
+  const existing = await pool.query<{ quantity: number; is_maybeboard: number }>(
+    'SELECT quantity, is_maybeboard FROM deck_cards WHERE deck_id = $1 AND card_id = $2',
+    [deckId, cardId]
+  );
 
-  if (existing) {
-    // Sposta al maybeboard se era nel main deck
-    db.prepare(
-      'UPDATE deck_cards SET quantity = quantity + ?, is_maybeboard = 1 WHERE deck_id = ? AND card_id = ?'
-    ).run(quantity, deckId, cardId);
+  if (existing.rows.length > 0) {
+    await pool.query(
+      'UPDATE deck_cards SET quantity = quantity + $1, is_maybeboard = 1 WHERE deck_id = $2 AND card_id = $3',
+      [quantity, deckId, cardId]
+    );
   } else {
-    db.prepare(
-      'INSERT INTO deck_cards (deck_id, card_id, quantity, is_commander, is_maybeboard) VALUES (?, ?, ?, 0, 1)'
-    ).run(deckId, cardId, quantity);
+    await pool.query(
+      'INSERT INTO deck_cards (deck_id, card_id, quantity, is_commander, is_maybeboard) VALUES ($1, $2, $3, 0, 1)',
+      [deckId, cardId, quantity]
+    );
   }
-  db.prepare('UPDATE decks SET updated_at = ? WHERE id = ?').run(new Date().toISOString(), deckId);
+  await pool.query('UPDATE decks SET updated_at = $1 WHERE id = $2', [new Date().toISOString(), deckId]);
 }
 
-export function removeFromMaybeboard(deckId: string, cardId: string): boolean {
-  const db = getDb();
-  const result = db
-    .prepare('DELETE FROM deck_cards WHERE deck_id = ? AND card_id = ? AND is_maybeboard = 1')
-    .run(deckId, cardId);
-  if (result.changes > 0) {
-    db.prepare('UPDATE decks SET updated_at = ? WHERE id = ?').run(new Date().toISOString(), deckId);
+export async function removeFromMaybeboard(deckId: string, cardId: string): Promise<boolean> {
+  const pool = getPgPool();
+  const res = await pool.query(
+    'DELETE FROM deck_cards WHERE deck_id = $1 AND card_id = $2 AND is_maybeboard = 1',
+    [deckId, cardId]
+  );
+  if ((res.rowCount ?? 0) > 0) {
+    await pool.query('UPDATE decks SET updated_at = $1 WHERE id = $2', [new Date().toISOString(), deckId]);
+    return true;
   }
-  return result.changes > 0;
+  return false;
 }
 
-export function moveMaybeboardToMain(deckId: string, cardId: string): boolean {
-  const db = getDb();
-  const result = db
-    .prepare('UPDATE deck_cards SET is_maybeboard = 0 WHERE deck_id = ? AND card_id = ? AND is_maybeboard = 1')
-    .run(deckId, cardId);
-  if (result.changes > 0) {
-    db.prepare('UPDATE decks SET updated_at = ? WHERE id = ?').run(new Date().toISOString(), deckId);
+export async function moveMaybeboardToMain(deckId: string, cardId: string): Promise<boolean> {
+  const pool = getPgPool();
+  const res = await pool.query(
+    'UPDATE deck_cards SET is_maybeboard = 0 WHERE deck_id = $1 AND card_id = $2 AND is_maybeboard = 1',
+    [deckId, cardId]
+  );
+  if ((res.rowCount ?? 0) > 0) {
+    await pool.query('UPDATE decks SET updated_at = $1 WHERE id = $2', [new Date().toISOString(), deckId]);
+    return true;
   }
-  return result.changes > 0;
+  return false;
 }
 
 // Carica gli oggetti Card completi dal cache SQLite per ogni voce del mazzo
@@ -100,19 +107,21 @@ export async function hydrateCards(rows: DeckCardRow[]): Promise<Map<string, Car
 // ─── Validazione mazzo ─────────────────────────────────────────────────────
 
 export async function validateDeck(deckId: string): Promise<ValidationResult> {
-  const db = getDb();
+  const pool = getPgPool();
   const errors: string[] = [];
 
   // Recupera il commander
-  const deckRow = db.prepare('SELECT commander_id FROM decks WHERE id = ?').get(deckId) as
-    | { commander_id: string }
-    | undefined;
+  const deckRes = await pool.query<{ commander_id: string }>(
+    'SELECT commander_id FROM decks WHERE id = $1',
+    [deckId]
+  );
+  const deckRow = deckRes.rows[0];
 
   if (!deckRow) {
     return { valid: false, errors: ['Mazzo non trovato.'] };
   }
 
-  const rows = getDeckCardRows(deckId);
+  const rows = await getDeckCardRows(deckId);
   const cardMap = await hydrateCards(rows);
   const commander = await getCardById(deckRow.commander_id);
 
@@ -181,7 +190,7 @@ export async function validateDeck(deckId: string): Promise<ValidationResult> {
 // ─── Statistiche mazzo ─────────────────────────────────────────────────────
 
 export async function computeDeckStats(deckId: string): Promise<DeckStats> {
-  const rows = getDeckCardRows(deckId);
+  const rows = await getDeckCardRows(deckId);
   const cardMap = await hydrateCards(rows);
 
   const stats: DeckStats = {
@@ -366,50 +375,46 @@ function detectFunctional(card: Card): string[] {
 
 // ─── Aggiunta/rimozione carte ──────────────────────────────────────────────
 
-export function addCardToDeck(
+export async function addCardToDeck(
   deckId: string,
   cardId: string,
   quantity: number,
   isCommander: boolean
-): void {
-  const db = getDb();
+): Promise<void> {
+  const pool = getPgPool();
 
-  // Verifica se già presente
-  const existing = db
-    .prepare('SELECT quantity FROM deck_cards WHERE deck_id = ? AND card_id = ?')
-    .get(deckId, cardId) as { quantity: number } | undefined;
-
-  if (existing) {
-    db.prepare(
-      'UPDATE deck_cards SET quantity = quantity + ? WHERE deck_id = ? AND card_id = ?'
-    ).run(quantity, deckId, cardId);
-  } else {
-    db.prepare(
-      'INSERT INTO deck_cards (deck_id, card_id, quantity, is_commander) VALUES (?, ?, ?, ?)'
-    ).run(deckId, cardId, quantity, isCommander ? 1 : 0);
-  }
-
-  // Aggiorna updated_at del mazzo
-  db.prepare('UPDATE decks SET updated_at = ? WHERE id = ?').run(
-    new Date().toISOString(),
-    deckId
+  const existing = await pool.query<{ quantity: number }>(
+    'SELECT quantity FROM deck_cards WHERE deck_id = $1 AND card_id = $2',
+    [deckId, cardId]
   );
-}
 
-export function removeCardFromDeck(deckId: string, cardId: string): boolean {
-  const db = getDb();
-  const result = db
-    .prepare('DELETE FROM deck_cards WHERE deck_id = ? AND card_id = ?')
-    .run(deckId, cardId);
-
-  if (result.changes > 0) {
-    db.prepare('UPDATE decks SET updated_at = ? WHERE id = ?').run(
-      new Date().toISOString(),
-      deckId
+  if (existing.rows.length > 0) {
+    await pool.query(
+      'UPDATE deck_cards SET quantity = quantity + $1 WHERE deck_id = $2 AND card_id = $3',
+      [quantity, deckId, cardId]
+    );
+  } else {
+    await pool.query(
+      'INSERT INTO deck_cards (deck_id, card_id, quantity, is_commander) VALUES ($1, $2, $3, $4)',
+      [deckId, cardId, quantity, isCommander ? 1 : 0]
     );
   }
 
-  return result.changes > 0;
+  await pool.query('UPDATE decks SET updated_at = $1 WHERE id = $2', [new Date().toISOString(), deckId]);
+}
+
+export async function removeCardFromDeck(deckId: string, cardId: string): Promise<boolean> {
+  const pool = getPgPool();
+  const res = await pool.query(
+    'DELETE FROM deck_cards WHERE deck_id = $1 AND card_id = $2',
+    [deckId, cardId]
+  );
+
+  if ((res.rowCount ?? 0) > 0) {
+    await pool.query('UPDATE decks SET updated_at = $1 WHERE id = $2', [new Date().toISOString(), deckId]);
+    return true;
+  }
+  return false;
 }
 
 // ─── Export mazzo ──────────────────────────────────────────────────────────

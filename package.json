@@ -10,10 +10,12 @@
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
-    "build": "npm run build --workspace=shared && npm run build --workspace=backend && npm run build --workspace=frontend",
+    "build": "npm run build --workspace=frontend",
+    "start": "NODE_ENV=production node -e \"require('tsx/cjs'); require('./backend/src/index.ts')\"",
     "lint": "npm run lint --workspaces --if-present"
   },
   "devDependencies": {
-    "concurrently": "^9.0.0"
+    "concurrently": "^9.0.0",
+    "tsx": "^4.15.1"
   }
 }

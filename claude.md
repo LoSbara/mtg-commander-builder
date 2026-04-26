@@ -24,13 +24,15 @@ Un'applicazione web full-stack per la creazione e gestione di mazzi **Commander*
 |-----------|----------------------------------------------------|
 | Frontend  | React 18 + TypeScript + Vite                       |
 | Backend   | Node.js + Express + TypeScript                     |
-| Cache DB  | SQLite (via `better-sqlite3`)                      |
+| Cache DB  | SQLite (via `better-sqlite3`) — solo cache Scryfall |
+| Deck DB   | PostgreSQL (via `pg`) — mazzi e carte              |
 | Cards API | Scryfall REST API                                  |
 | Deck data | EDHREC JSON API (pubblico, cache 24h in memoria)   |
 | AI cloud  | Groq API (`llama-3.3-70b-versatile`, key in `.env`) |
 | AI locale | Ollama (fallback se no GROQ_API_KEY, default `llama3.2`) |
 | Icons     | mana-font (simboli mana SVG)                       |
 | Monorepo  | npm workspaces                                     |
+| Deploy    | Render (web service + PostgreSQL gratuiti)         |
 
 ---
 
@@ -245,6 +247,7 @@ cd backend && npx tsc --noEmit
 GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxx   # attiva la modalità Groq
 OLLAMA_HOST=http://localhost:11434       # opzionale, default localhost
 OLLAMA_MODEL=llama3.2                   # opzionale
+DATABASE_URL=postgresql://user:pass@host:5432/dbname  # PostgreSQL (in prod: Render lo inietta automaticamente)
 ```
 
 ---

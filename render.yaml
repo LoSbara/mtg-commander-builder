@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: mtg-commander-builder
+    runtime: node
+    region: frankfurt
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mtg-postgres
+          property: connectionString
+      - key: GROQ_API_KEY
+        sync: false   # inserisci manualmente nella dashboard Render
+
+databases:
+  - name: mtg-postgres
+    plan: free
+    region: frankfurt
