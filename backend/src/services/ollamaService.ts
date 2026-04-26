@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import type { Card } from 'shared';
+import type { EDHRecCard } from './edhrecService';
 
 const OLLAMA_BASE = process.env.OLLAMA_HOST ?? 'http://localhost:11434';
 const DEFAULT_MODEL = process.env.OLLAMA_MODEL ?? 'llama3.2';
@@ -57,7 +58,7 @@ export async function getAvailableModels(): Promise<string[]> {
 
 // ─── Prompt builder ──────────────────────────────────────────────────────────
 
-export function buildPrompt(commander: Card, currentCards: Card[], colorIdentity: string[]): string {
+export function buildPrompt(commander: Card, currentCards: Card[], colorIdentity: string[], edhrecCards?: EDHRecCard[]): string {
   const existingNames = currentCards
     .filter((c) => c.name !== commander.name)
     .map((c) => c.name)
@@ -70,6 +71,22 @@ export function buildPrompt(commander: Card, currentCards: Card[], colorIdentity
     ? 'Colorless'
     : colorIdentity.map((c) => colorNames[c] ?? c).join(', ');
 
+  // Sezione EDHREC opzionale ─ inclusa solo se i dati sono disponibili
+  const edhrecSection = edhrecCards && edhrecCards.length > 0
+    ? `\n--- EDHREC COMMUNITY DATA for ${commander.name} ---
+The following cards are popular in community decks for this commander.
+Format: CardName | EDHREC synergy | inclusion in X% of similar decks | salt score (0=friendly, 4=very salty/frustrating)
+${edhrecCards.slice(0, 30).map((c) =>
+  `- ${c.name} | synergy: ${c.synergy > 0 ? '+' : ''}${(c.synergy * 100).toFixed(0)}% | ${c.inclusionRate}% of decks | salt: ${c.salt.toFixed(1)}/4.0`
+).join('\n')}
+
+Salt score guide: 0-1 = table-friendly card, 1-2 = mild, 2-3 = competitive/polarizing, 3-4 = very salty (infuriates opponents).
+You SHOULD factor in EDHREC data: prefer high-synergy, high-inclusion cards when relevant.
+You MAY also suggest non-EDHREC cards if they fit the strategy.
+Balance salt score according to the deck's power level — mention salt in the reason when relevant.
+--- END EDHREC DATA ---\n`
+    : '';
+
   return `You are an expert Magic: The Gathering Commander (EDH) deckbuilder.
 
 Commander: ${commander.name}
@@ -78,7 +95,7 @@ Type: ${commander.type_line}
 Oracle Text: ${commander.oracle_text ?? 'N/A'}
 ${commander.power !== undefined ? `Power/Toughness: ${commander.power}/${commander.toughness}` : ''}
 ${currentCards.length > 1 ? `Already in deck: ${existingNames}` : 'Deck is empty (only commander so far)'}
-
+${edhrecSection}
 *** CRITICAL RULES — YOU MUST FOLLOW THESE EXACTLY ***
 1. ONLY suggest cards that are 100% legal in {${colorStr}} color identity.
 2. A card is legal ONLY if every mana symbol and color indicator on it is within {${colorStr}}.
@@ -215,10 +232,11 @@ export async function getTrimSuggestions(
 export async function getDeckSuggestions(
   commander: Card,
   currentCards: Card[],
-  model?: string
+  model?: string,
+  edhrecCards?: EDHRecCard[]
 ): Promise<AISuggestions> {
   const targetModel = model ?? DEFAULT_MODEL;
-  const prompt = buildPrompt(commander, currentCards, commander.color_identity);
+  const prompt = buildPrompt(commander, currentCards, commander.color_identity, edhrecCards);
 
   try {
     const response = await axios.post<{ message: { content: string } }>(

@@ -6,6 +6,7 @@
  */
 
 import type { Card } from 'shared';
+import type { EDHRecCard } from './edhrecService';
 import {
   isOllamaAvailable,
   getAvailableModels as getOllamaModels,
@@ -43,12 +44,13 @@ export async function getAvailableModels(): Promise<string[]> {
 export async function getDeckSuggestions(
   commander: Card,
   currentCards: Card[],
-  model?: string
+  model?: string,
+  edhrecCards?: EDHRecCard[]
 ): Promise<Awaited<ReturnType<typeof getDeckSuggestionsOllama>>> {
   if (getActiveProvider() === 'groq') {
-    return getSuggestionsGroq(commander, currentCards, model);
+    return getSuggestionsGroq(commander, currentCards, model, edhrecCards);
   }
-  return getDeckSuggestionsOllama(commander, currentCards, model);
+  return getDeckSuggestionsOllama(commander, currentCards, model, edhrecCards);
 }
 
 export async function getTrimSuggestions(

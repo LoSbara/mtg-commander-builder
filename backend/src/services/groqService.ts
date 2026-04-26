@@ -10,6 +10,7 @@ import Groq from 'groq-sdk';
 import type { Card } from 'shared';
 import type { AISuggestions, TrimSuggestions } from './ollamaService';
 import { buildPrompt, buildTrimPrompt } from './ollamaService';
+import type { EDHRecCard } from './edhrecService';
 
 // Modelli supportati da Groq (free tier)
 export const GROQ_MODELS = [
@@ -72,7 +73,8 @@ export async function getTrimSuggestionsGroq(
 export async function getSuggestionsGroq(
   commander: Card,
   currentCards: Card[],
-  model?: string
+  model?: string,
+  edhrecCards?: EDHRecCard[]
 ): Promise<AISuggestions> {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
@@ -80,7 +82,7 @@ export async function getSuggestionsGroq(
   }
 
   const targetModel = model ?? DEFAULT_GROQ_MODEL;
-  const prompt = buildPrompt(commander, currentCards, commander.color_identity);
+  const prompt = buildPrompt(commander, currentCards, commander.color_identity, edhrecCards);
 
   const client = new Groq({ apiKey });
 

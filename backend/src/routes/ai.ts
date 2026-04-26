@@ -10,6 +10,7 @@ import {
   getActiveProvider,
 } from '../services/aiService';
 import { searchCards } from '../services/scryfallService';
+import { getCommanderRecommendations } from '../services/edhrecService';
 
 const router = Router();
 
@@ -53,8 +54,14 @@ router.post('/decks/:id/suggest', async (req, res) => {
     const cardMap = await hydrateCards(rows);
     const currentCards = Array.from(cardMap.values());
 
-    // Genera suggerimenti via LLM
-    const suggestions = await getDeckSuggestions(commander, currentCards, model);
+    // Recupera dati EDHREC per il commander (non blocca se non disponibili)
+    const edhrecCards = await getCommanderRecommendations(commander.name);
+    if (edhrecCards.length > 0) {
+      console.log(`[AI] EDHREC: ${edhrecCards.length} carte disponibili per ${commander.name}`);
+    }
+
+    // Genera suggerimenti via LLM, includendo i dati EDHREC nel prompt
+    const suggestions = await getDeckSuggestions(commander, currentCards, model, edhrecCards);
 
     // Risolve i nomi delle carte su Scryfall in modo sequenziale (rispetta rate limit)
     // e filtra le carte illegali per color identity
