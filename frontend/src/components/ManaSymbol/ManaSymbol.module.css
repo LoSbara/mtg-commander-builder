@@ -20,7 +20,18 @@
 /* ─── Stile MTG classico: cerchio colorato + simbolo scuro dentro ───────────
    ms-cost usa background-color (cerchio) + color: #111 (simbolo).           
    Sovrascriviamo solo i colori pastello originali con una palette più vivace.
-   Le CSS variables governano i colori dei gradienti diagonali degli ibridi. */
+   Le CSS variables governano i colori dei gradienti diagonali degli ibridi.
+   I simboli senza ms-cost (es. statistiche) ricevono invece il colore glifo. */
+
+/* Glifo colorato per simboli standalone (senza cerchio ms-cost) */
+:global(.ms-w:not(.ms-cost)) { color: #f9e48f; }
+:global(.ms-u:not(.ms-cost)) { color: #7ec8f7; }
+:global(.ms-b:not(.ms-cost)) { color: #c9a0dc; }
+:global(.ms-r:not(.ms-cost)) { color: #ff7055; }
+:global(.ms-g:not(.ms-cost)) { color: #5cd65c; }
+:global(.ms-c:not(.ms-cost)) { color: #d4c59a; }
+:global(.ms-s:not(.ms-cost)) { color: #a1e8e8; }
+:global(.ms-x:not(.ms-cost)) { color: #bbb; }
 :global(:root) {
   --ms-mana-w: #f5eeb0;   /* oro/giallo  */
   --ms-mana-u: #4da8e8;   /* blu         */
