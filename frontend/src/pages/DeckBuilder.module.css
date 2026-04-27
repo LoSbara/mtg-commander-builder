@@ -231,7 +231,7 @@
 
 .layout {
   display: grid;
-  grid-template-columns: 560px 1fr 260px;
+  grid-template-columns: 480px 1fr 280px;
   gap: 0;
   flex: 1;
   overflow: hidden;

@@ -3,7 +3,6 @@ import type { Card } from 'shared';
 import * as api from '../../api';
 import type { AISuggestions, CardSuggestion, OllamaStatus, TrimSuggestions, WeaknessAnalysis } from '../../api';
 import styles from './AIAssistant.module.css';
-
 const CATEGORY_COLORS: Record<string, string> = {
   Sinergia: '#7c3aed',
   Rampa: '#15803d',
@@ -41,6 +40,7 @@ export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard, tot
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<WeaknessAnalysis | null>(null);
   const [analysisError, setAnalysisError] = useState('');
+  const [cardPreview, setCardPreview] = useState<{ url: string; x: number; y: number } | null>(null);
 
   useEffect(() => {
     api.getAIStatus()
@@ -115,6 +115,22 @@ export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard, tot
     setAddedCards((prev) => new Set(prev).add(suggestion.card!.id));
   }
 
+  function handleCardMouseMove(e: React.MouseEvent, card: Card | undefined) {
+    const url = card?.image_uris?.normal ?? card?.card_faces?.[0]?.image_uris?.normal;
+    if (!url) return;
+    const x = e.clientX + 16;
+    const y = e.clientY - 60;
+    setCardPreview({
+      url,
+      x: Math.min(x, window.innerWidth - 345),
+      y: Math.max(8, Math.min(y, window.innerHeight - 480)),
+    });
+  }
+
+  function handleCardMouseLeave() {
+    setCardPreview(null);
+  }
+
   if (statusLoading) {
     return <div className={styles.loading}>Verifica Ollama…</div>;
   }
@@ -172,6 +188,7 @@ export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard, tot
   }
 
   return (
+    <>
     <div className={styles.container}>
       {/* Header con selezione modello */}
       <div className={styles.header}>
@@ -433,7 +450,12 @@ export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard, tot
                 const isAdded = alreadyInDeck || alreadyAdded;
 
                 return (
-                  <div key={i} className={`${styles.suggestionCard} ${isAdded ? styles.added : ''}`}>
+                  <div
+                    key={i}
+                    className={`${styles.suggestionCard} ${isAdded ? styles.added : ''}`}
+                    onMouseMove={(e) => handleCardMouseMove(e, s.card ?? undefined)}
+                    onMouseLeave={handleCardMouseLeave}
+                  >
                     <div className={styles.suggestionLeft}>
                       {s.card?.image_uris?.small ? (
                         <img
@@ -494,5 +516,21 @@ export function AIAssistant({ deckId, commanderCard, deckCardIds, onAddCard, tot
         </div>
       )}
     </div>
+    {cardPreview && (
+      <div style={{
+        position: 'fixed',
+        left: cardPreview.x,
+        top: cardPreview.y,
+        zIndex: 9999,
+        pointerEvents: 'none',
+      }}>
+        <img
+          src={cardPreview.url}
+          alt=""
+          style={{ width: 330, borderRadius: 16, boxShadow: '0 16px 56px rgba(0,0,0,0.95)', display: 'block' }}
+        />
+      </div>
+    )}
+    </>
   );
 }
