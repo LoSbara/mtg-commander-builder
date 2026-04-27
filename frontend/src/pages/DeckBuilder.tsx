@@ -48,31 +48,98 @@ export default function DeckBuilder() {
   const [showHandSimulator, setShowHandSimulator] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
 
-  // Print proxy
+  // Print proxy — 9 carte per foglio A4 (3×3), 63mm×88mm per carta
   function handlePrintProxy() {
     if (!currentDeck) return;
-    const rows = currentDeck.cards.filter((r) => r.is_commander !== 1);
+
+    // Raccoglie tutte le carte (incluso commander)
     const imgUrls: string[] = [];
-    for (const row of rows) {
+    for (const row of currentDeck.cards) {
       const card = cardCache.get(row.card_id);
       const url = card?.image_uris?.normal ?? card?.card_faces?.[0]?.image_uris?.normal;
       if (url) {
         for (let i = 0; i < row.quantity; i++) imgUrls.push(url);
       }
     }
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Proxy — ${currentDeck.name}</title>
-<style>
-  @page { margin: 8mm; }
-  body { margin: 0; background: #fff; font-family: sans-serif; }
-  h2 { font-size: 13px; text-align: center; margin: 4px 0 10px; color: #333; }
-  .grid { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-start; }
-  .card { width: 63mm; height: 88mm; object-fit: cover; border-radius: 3mm; border: 1px solid #bbb; display: block; }
-  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-</style></head><body>
-<h2>${currentDeck.name} — ${imgUrls.length} carte</h2>
-<div class="grid">${imgUrls.map(u => `<img class="card" src="${u}" loading="eager">`).join('')}</div>
-<script>window.onload=function(){setTimeout(function(){window.print();},600);}</script>
-</body></html>`;
+
+    // Suddivide in pagine da 9
+    const pages: string[][] = [];
+    for (let i = 0; i < imgUrls.length; i += 9) pages.push(imgUrls.slice(i, i + 9));
+
+    const pagesHtml = pages.map((page, pi) => {
+      const isLast = pi === pages.length - 1;
+      const cards = page.map(u =>
+        `<img class="card" src="${u}" alt="" crossorigin="anonymous">`
+      ).join('');
+      return `<div class="page${isLast ? ' last' : ''}">${cards}</div>`;
+    }).join('\n');
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Proxy — ${currentDeck.name}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* Foglio A4 — zero margini, stampa a piena pagina */
+    @page { size: A4 portrait; margin: 0; }
+
+    body { background: #fff; }
+
+    /* Una pagina = esattamente 210mm × 297mm */
+    .page {
+      width: 210mm;
+      height: 297mm;
+      display: grid;
+      grid-template-columns: repeat(3, 63mm);
+      grid-template-rows: repeat(3, 88mm);
+      /* Centra la griglia 189mm×264mm nel foglio 210mm×297mm */
+      justify-content: center;
+      align-content: center;
+      gap: 0;
+      page-break-after: always;
+      overflow: hidden;
+    }
+    .page.last { page-break-after: avoid; }
+
+    /* Ogni carta: dimensioni reali di una carta MTG */
+    .card {
+      width: 63mm;
+      height: 88mm;
+      object-fit: cover;
+      display: block;
+      /* Linea di taglio sottile tra le carte */
+      outline: 0.2mm solid #ccc;
+    }
+
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+${pagesHtml}
+<script>
+  // Aspetta che tutte le immagini siano caricate prima di aprire la finestra di stampa
+  (function() {
+    var imgs = document.querySelectorAll('img');
+    var total = imgs.length;
+    var loaded = 0;
+    function onDone() {
+      loaded++;
+      if (loaded >= total) setTimeout(function() { window.print(); }, 400);
+    }
+    if (total === 0) { setTimeout(function() { window.print(); }, 400); return; }
+    imgs.forEach(function(img) {
+      if (img.complete && img.naturalWidth > 0) { onDone(); }
+      else { img.onload = onDone; img.onerror = onDone; }
+    });
+  })();
+</script>
+</body>
+</html>`;
+
     const win = window.open('', '_blank');
     if (win) { win.document.write(html); win.document.close(); }
   }
