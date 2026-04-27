@@ -82,34 +82,36 @@ export default function DeckBuilder() {
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    /* Foglio A4 — zero margini, stampa a piena pagina */
-    @page { size: A4 portrait; margin: 0; }
+    /* Funziona sia con A4 (297mm) che Letter (279mm) — entrambi contengono 3×88mm=264mm */
+    @page { margin: 0; }
 
     body { background: #fff; }
 
-    /* Una pagina = esattamente 210mm × 297mm */
+    /*
+      NON impostare height fissa: 3×88mm=264mm sta in A4 e Letter.
+      Il page-break-after:always divide le pagine ogni 9 carte.
+      justify-content:center centra orizzontalmente (189mm su 210mm+).
+    */
     .page {
-      width: 210mm;
-      height: 297mm;
       display: grid;
       grid-template-columns: repeat(3, 63mm);
       grid-template-rows: repeat(3, 88mm);
-      /* Centra la griglia 189mm×264mm nel foglio 210mm×297mm */
       justify-content: center;
-      align-content: center;
       gap: 0;
+      break-after: page;
       page-break-after: always;
-      overflow: hidden;
     }
-    .page.last { page-break-after: avoid; }
+    .page.last {
+      break-after: avoid;
+      page-break-after: avoid;
+    }
 
-    /* Ogni carta: dimensioni reali di una carta MTG */
+    /* Ogni carta: dimensioni reali MTG, no arrotondamento bordi per taglio preciso */
     .card {
       width: 63mm;
       height: 88mm;
       object-fit: cover;
       display: block;
-      /* Linea di taglio sottile tra le carte */
       outline: 0.2mm solid #ccc;
     }
 
@@ -121,7 +123,6 @@ export default function DeckBuilder() {
 <body>
 ${pagesHtml}
 <script>
-  // Aspetta che tutte le immagini siano caricate prima di aprire la finestra di stampa
   (function() {
     var imgs = document.querySelectorAll('img');
     var total = imgs.length;
