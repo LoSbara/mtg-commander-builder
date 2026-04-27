@@ -1,5 +1,5 @@
 import type { Card, ManaColor, DeckStats } from 'shared';
-import { getPgPool } from '../models/pgDb';
+import { getDb } from '../models/dbAdapter';
 import { getCardById } from './scryfallService';
 
 // ─── Tipi interni ──────────────────────────────────────────────────────────
@@ -26,7 +26,7 @@ function isBasicLand(card: Card): boolean {
 // ─── Lettura carte dal DB ──────────────────────────────────────────────────
 
 export async function getDeckCardRows(deckId: string): Promise<DeckCardRow[]> {
-  const res = await getPgPool().query<DeckCardRow>(
+  const res = await getDb().query<DeckCardRow>(
     'SELECT deck_id, card_id, quantity, is_commander, is_maybeboard FROM deck_cards WHERE deck_id = $1 AND (is_maybeboard IS NULL OR is_maybeboard = 0)',
     [deckId]
   );
@@ -34,7 +34,7 @@ export async function getDeckCardRows(deckId: string): Promise<DeckCardRow[]> {
 }
 
 export async function getMaybeboardRows(deckId: string): Promise<DeckCardRow[]> {
-  const res = await getPgPool().query<DeckCardRow>(
+  const res = await getDb().query<DeckCardRow>(
     'SELECT deck_id, card_id, quantity, is_commander, is_maybeboard FROM deck_cards WHERE deck_id = $1 AND is_maybeboard = 1',
     [deckId]
   );
@@ -42,7 +42,7 @@ export async function getMaybeboardRows(deckId: string): Promise<DeckCardRow[]> 
 }
 
 export async function addToMaybeboard(deckId: string, cardId: string, quantity: number): Promise<void> {
-  const pool = getPgPool();
+  const pool = getDb();
   const existing = await pool.query<{ quantity: number; is_maybeboard: number }>(
     'SELECT quantity, is_maybeboard FROM deck_cards WHERE deck_id = $1 AND card_id = $2',
     [deckId, cardId]
@@ -63,7 +63,7 @@ export async function addToMaybeboard(deckId: string, cardId: string, quantity: 
 }
 
 export async function removeFromMaybeboard(deckId: string, cardId: string): Promise<boolean> {
-  const pool = getPgPool();
+  const pool = getDb();
   const res = await pool.query(
     'DELETE FROM deck_cards WHERE deck_id = $1 AND card_id = $2 AND is_maybeboard = 1',
     [deckId, cardId]
@@ -76,7 +76,7 @@ export async function removeFromMaybeboard(deckId: string, cardId: string): Prom
 }
 
 export async function moveMaybeboardToMain(deckId: string, cardId: string): Promise<boolean> {
-  const pool = getPgPool();
+  const pool = getDb();
   const res = await pool.query(
     'UPDATE deck_cards SET is_maybeboard = 0 WHERE deck_id = $1 AND card_id = $2 AND is_maybeboard = 1',
     [deckId, cardId]
@@ -107,7 +107,7 @@ export async function hydrateCards(rows: DeckCardRow[]): Promise<Map<string, Car
 // ─── Validazione mazzo ─────────────────────────────────────────────────────
 
 export async function validateDeck(deckId: string): Promise<ValidationResult> {
-  const pool = getPgPool();
+  const pool = getDb();
   const errors: string[] = [];
 
   // Recupera il commander
@@ -381,7 +381,7 @@ export async function addCardToDeck(
   quantity: number,
   isCommander: boolean
 ): Promise<void> {
-  const pool = getPgPool();
+  const pool = getDb();
 
   const existing = await pool.query<{ quantity: number }>(
     'SELECT quantity FROM deck_cards WHERE deck_id = $1 AND card_id = $2',
@@ -404,7 +404,7 @@ export async function addCardToDeck(
 }
 
 export async function removeCardFromDeck(deckId: string, cardId: string): Promise<boolean> {
-  const pool = getPgPool();
+  const pool = getDb();
   const res = await pool.query(
     'DELETE FROM deck_cards WHERE deck_id = $1 AND card_id = $2',
     [deckId, cardId]

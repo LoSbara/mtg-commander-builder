@@ -3,7 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import { initDb } from './models/db';
-import { initPgDb } from './models/pgDb';
+import { initDbAdapter } from './models/dbAdapter';
 import cardsRouter from './routes/cards';
 import commandersRouter from './routes/commanders';
 import decksRouter from './routes/decks';
@@ -45,11 +45,7 @@ if (isProd) {
 // Inizializza DB e avvia il server
 async function main() {
   initDb();
-  if (process.env.DATABASE_URL) {
-    await initPgDb();
-  } else {
-    console.warn('DATABASE_URL non impostata — le route /api/decks non funzioneranno.');
-  }
+  await initDbAdapter();
   app.listen(PORT, () => {
     console.log(`Backend in ascolto su http://localhost:${PORT}`);
   });

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { randomUUID } from 'crypto';
-import { getPgPool } from '../models/pgDb';
+import { getDb } from '../models/dbAdapter';
 import type { Deck } from 'shared';
 import {
   addCardToDeck,
@@ -24,7 +24,7 @@ const router = Router();
 
 // GET /api/decks/public/:token  — vista pubblica di un mazzo condiviso
 router.get('/public/:token', async (req, res) => {
-  const pool = getPgPool();
+  const pool = getDb();
   const deckRes = await pool.query('SELECT * FROM decks WHERE share_token = $1', [req.params.token]);
   const deck = deckRes.rows[0] as Record<string, unknown> | undefined;
 
@@ -39,7 +39,7 @@ router.get('/public/:token', async (req, res) => {
 
 // GET /api/decks
 router.get('/', async (_req, res) => {
-  const pool = getPgPool();
+  const pool = getDb();
   const decksRes = await pool.query('SELECT * FROM decks ORDER BY updated_at DESC');
   const result = await Promise.all(
     decksRes.rows.map(async (deck: Record<string, unknown>) => ({
@@ -52,7 +52,7 @@ router.get('/', async (_req, res) => {
 
 // GET /api/decks/:id
 router.get('/:id', async (req, res) => {
-  const pool = getPgPool();
+  const pool = getDb();
   const deckRes = await pool.query('SELECT * FROM decks WHERE id = $1', [req.params.id]);
   const deck = deckRes.rows[0];
 
@@ -73,7 +73,7 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ message: 'name e commander_id sono obbligatori.' });
   }
 
-  const pool = getPgPool();
+  const pool = getDb();
   const id = randomUUID();
   const now = new Date().toISOString();
 
@@ -90,7 +90,7 @@ router.post('/', async (req, res) => {
 
 // PUT /api/decks/:id
 router.put('/:id', async (req, res) => {
-  const pool = getPgPool();
+  const pool = getDb();
   const existing = await pool.query('SELECT id FROM decks WHERE id = $1', [req.params.id]);
 
   if (existing.rows.length === 0) {
@@ -110,7 +110,7 @@ router.put('/:id', async (req, res) => {
 
 // DELETE /api/decks/:id
 router.delete('/:id', async (req, res) => {
-  const pool = getPgPool();
+  const pool = getDb();
   const res2 = await pool.query('DELETE FROM decks WHERE id = $1', [req.params.id]);
 
   if ((res2.rowCount ?? 0) === 0) {
@@ -124,7 +124,7 @@ router.delete('/:id', async (req, res) => {
 
 // POST /api/decks/:id/cards  — aggiunge una carta
 router.post('/:id/cards', async (req, res) => {
-  const pool = getPgPool();
+  const pool = getDb();
   const deck = await pool.query('SELECT id FROM decks WHERE id = $1', [req.params.id]);
 
   if (deck.rows.length === 0) {
@@ -161,7 +161,7 @@ router.delete('/:id/cards/:cardId', async (req, res) => {
 
 // GET /api/decks/:id/stats  — statistiche mazzo
 router.get('/:id/stats', async (req, res) => {
-  const pool = getPgPool();
+  const pool = getDb();
   const deck = await pool.query('SELECT id FROM decks WHERE id = $1', [req.params.id]);
 
   if (deck.rows.length === 0) {
@@ -179,7 +179,7 @@ router.get('/:id/stats', async (req, res) => {
 
 // GET /api/decks/:id/validate  — validazione Commander
 router.get('/:id/validate', async (req, res) => {
-  const pool = getPgPool();
+  const pool = getDb();
   const deck = await pool.query('SELECT id FROM decks WHERE id = $1', [req.params.id]);
 
   if (deck.rows.length === 0) {
@@ -197,7 +197,7 @@ router.get('/:id/validate', async (req, res) => {
 
 // GET /api/decks/:id/combos  — ricerca combo Commander Spellbook
 router.get('/:id/combos', async (req, res) => {
-  const pool = getPgPool();
+  const pool = getDb();
   const deckRes = await pool.query<{ commander_id: string }>(
     'SELECT commander_id FROM decks WHERE id = $1',
     [req.params.id]
@@ -233,7 +233,7 @@ router.get('/:id/combos', async (req, res) => {
 
 // POST /api/decks/:id/import  — importa carte da testo (MTGO/Arena/Moxfield/plain)
 router.post('/:id/import', async (req, res) => {
-  const pool = getPgPool();
+  const pool = getDb();
   const deckRes = await pool.query<{ id: string; commander_id: string }>(
     'SELECT id, commander_id FROM decks WHERE id = $1',
     [req.params.id]
@@ -304,7 +304,7 @@ router.post('/:id/import', async (req, res) => {
 
 // GET /api/decks/:id/maybeboard
 router.get('/:id/maybeboard', async (req, res) => {
-  const pool = getPgPool();
+  const pool = getDb();
   const deck = await pool.query('SELECT id FROM decks WHERE id = $1', [req.params.id]);
   if (deck.rows.length === 0) return res.status(404).json({ message: 'Mazzo non trovato.' });
   return res.json(await getMaybeboardRows(req.params.id));
@@ -312,7 +312,7 @@ router.get('/:id/maybeboard', async (req, res) => {
 
 // POST /api/decks/:id/maybeboard  — aggiunge carta al maybeboard
 router.post('/:id/maybeboard', async (req, res) => {
-  const pool = getPgPool();
+  const pool = getDb();
   const deck = await pool.query('SELECT id FROM decks WHERE id = $1', [req.params.id]);
   if (deck.rows.length === 0) return res.status(404).json({ message: 'Mazzo non trovato.' });
 
@@ -341,7 +341,7 @@ router.post('/:id/maybeboard/:cardId/move', async (req, res) => {
 
 // POST /api/decks/:id/share  — genera un token di condivisione pubblico
 router.post('/:id/share', async (req, res) => {
-  const pool = getPgPool();
+  const pool = getDb();
   const deckRes = await pool.query<{ id: string; share_token: string | null }>(
     'SELECT id, share_token FROM decks WHERE id = $1',
     [req.params.id]
@@ -359,7 +359,7 @@ router.post('/:id/share', async (req, res) => {
 
 // DELETE /api/decks/:id/share  — rimuove il link di condivisione
 router.delete('/:id/share', async (req, res) => {
-  const pool = getPgPool();
+  const pool = getDb();
   const existing = await pool.query('SELECT id FROM decks WHERE id = $1', [req.params.id]);
   if (existing.rows.length === 0) return res.status(404).json({ message: 'Mazzo non trovato.' });
 
@@ -369,7 +369,7 @@ router.delete('/:id/share', async (req, res) => {
 
 // GET /api/decks/:id/export?format=txt|mtgo|moxfield
 router.get('/:id/export', async (req, res) => {
-  const pool = getPgPool();
+  const pool = getDb();
   const deckRes = await pool.query<{ id: string; name: string; commander_id: string }>(
     'SELECT id, name, commander_id FROM decks WHERE id = $1',
     [req.params.id]
