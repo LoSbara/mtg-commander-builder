@@ -17,27 +17,20 @@
   line-height: 1;
 }
 
-/* ─── Colori per i glifi mana-font (funzionano su sfondo scuro) ─────────────
-   mana-font usa un font vettoriale: color cambia il colore del glifo.       */
-:global(.ms-w)  { color: #f9e48f; }   /* Bianco/oro                          */
-:global(.ms-u)  { color: #7ec8f7; }   /* Blu                                 */
-:global(.ms-b)  { color: #c9a0dc; }   /* Nero → viola su sfondo scuro        */
-:global(.ms-r)  { color: #ff7055; }   /* Rosso                               */
-:global(.ms-g)  { color: #5cd65c; }   /* Verde                               */
-:global(.ms-c)  { color: #d4c59a; }   /* Incolore/Colorless                  */
-:global(.ms-s)  { color: #a1e8e8; }   /* Snow                                */
-:global(.ms-x)  { color: #bbb; }      /* X                                   */
-/* Ibridi — ereditano il colore dal genitore */
-:global(.ms-wu) { color: #d9e87c; }
-:global(.ms-wb) { color: #d4b8e0; }
-:global(.ms-ub) { color: #a0c4e8; }
-:global(.ms-ur) { color: #88b8e8; }
-:global(.ms-br) { color: #dd8875; }
-:global(.ms-bg) { color: #8fc88f; }
-:global(.ms-rw) { color: #f2a07a; }
-:global(.ms-rg) { color: #91c468; }
-:global(.ms-gw) { color: #b2d97a; }
-:global(.ms-gu) { color: #72cdbb; }
-/* Numeri e simboli generici — grigio neutro */
-:global(.ms-tap)   { color: #aaa; }
-:global(.ms-untap) { color: #aaa; }
+/* ─── Stile MTG classico: cerchio colorato + simbolo scuro dentro ───────────
+   ms-cost usa background-color (cerchio) + color: #111 (simbolo).           
+   Sovrascriviamo solo i colori pastello originali con una palette più vivace.
+   Le CSS variables governano i colori dei gradienti diagonali degli ibridi. */
+:global(:root) {
+  --ms-mana-w: #f5eeb0;   /* oro/giallo  */
+  --ms-mana-u: #4da8e8;   /* blu         */
+  --ms-mana-b: #a09898;   /* grigio-marrone (simbolo #111 leggibile) */
+  --ms-mana-r: #e85428;   /* rosso-arancio */
+  --ms-mana-g: #52b85a;   /* verde       */
+  --ms-mana-c: #c8bdb0;   /* incolore    */
+}
+:global(.ms-cost.ms-w), :global(.ms-cost.ms-wp) { background-color: #f5eeb0 !important; }
+:global(.ms-cost.ms-u), :global(.ms-cost.ms-up) { background-color: #4da8e8 !important; }
+:global(.ms-cost.ms-b), :global(.ms-cost.ms-bp) { background-color: #a09898 !important; }
+:global(.ms-cost.ms-r), :global(.ms-cost.ms-rp) { background-color: #e85428 !important; }
+:global(.ms-cost.ms-g), :global(.ms-cost.ms-gp) { background-color: #52b85a !important; }

@@ -81,7 +81,7 @@ export function ManaCost({ cost, size = 'md', shadow = false }: ManaCostProps) {
     <span className={styles.manaCost} aria-label={cost}>
       {tokens.map((tok, i) => {
         const sym = tok.slice(1, -1); // rimuovi { e }
-        return <ManaIcon key={i} symbol={sym} size={size} shadow={shadow} />;
+        return <ManaIcon key={i} symbol={sym} size={size} shadow={shadow} cost />;
       })}
     </span>
   );
@@ -103,7 +103,7 @@ export function ColorIdentity({ colors, size = 'md' }: ColorIdentityProps) {
   return (
     <span className={styles.manaCost} aria-label={colors.join('')}>
       {colors.map((c) => (
-        <ManaIcon key={c} symbol={c} size={size} />
+        <ManaIcon key={c} symbol={c} size={size} cost />
       ))}
     </span>
   );
